@@ -1,0 +1,59 @@
+{
+  "law_name": "rocket",
+  "condition": "priors",
+  "budget": 800,
+  "seed": 2,
+  "best_test_error": 3.4028290132127856e-21,
+  "error_trace": [
+    [
+      1,
+      0.12086296777435288
+    ],
+    [
+      6,
+      3.4028290132127856e-21
+    ],
+    [
+      11,
+      3.4028290132127856e-21
+    ],
+    [
+      12,
+      3.4028290132127856e-21
+    ],
+    [
+      17,
+      3.4028290132127856e-21
+    ]
+  ],
+  "best_code": "N_PARAMS = 2\ndef evaluate_law(inputs, params):\n    x = inputs[0]  # exhaust_velocity\n    y = inputs[1]  # mass_ratio\n    return params[0] * x * math.log(y) + params[1]",
+  "total_prompt_tokens": 4124,
+  "total_completion_tokens": 1151,
+  "token_trace": [
+    [
+      1,
+      62
+    ],
+    [
+      6,
+      397
+    ],
+    [
+      11,
+      737
+    ],
+    [
+      12,
+      797
+    ],
+    [
+      17,
+      1151
+    ]
+  ],
+  "fitted_params": [
+    0.9999999999522908,
+    5.821374289938826e-10
+  ],
+  "true_law_str": "delta_v = v_e * ln(mass_ratio)  (Tsiolkovsky)"
+}

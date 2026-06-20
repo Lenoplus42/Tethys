@@ -28,6 +28,13 @@ from core.search import BATCH_SIZE, run_search
 E_TARGET = 1e-4          # §2.2 headline target error
 _ERR_FLOOR = 1e-18       # clamp exact-zero errors for log-scale plotting
 _LAW_BY_NAME = {"kepler": KEPLER, "newton": NEWTON, "rocket": ROCKET}
+# Function class per law (for plot labels) — these are DISTINCT classes, not a
+# strict complexity ladder; the thesis is the control + the range across classes.
+_FUNCTION_CLASS = {
+    "kepler": "power law · control",
+    "rocket": "transcendental · log",
+    "newton": "interaction · 3-input",
+}
 
 
 # ---------------------------------------------------------------------------
@@ -239,18 +246,21 @@ def plot_comparison(law_logs, save_path, e_target=E_TARGET, prices=None, order=N
     import matplotlib.pyplot as plt
 
     prices = prices or {}
+    # order by GEOMEAN price (the headline aggregate; consistent with the labels)
     names = order or sorted(
         law_logs,
-        key=lambda n: (prices.get(n, {}).get("prior_price", {}) or {}).get("mean") or 0.0,
+        key=lambda n: (prices.get(n, {}).get("prior_price", {}) or {}).get("geomean") or 0.0,
     )
     fig, axes = plt.subplots(1, len(names), figsize=(7.5 * len(names), 6), sharey=True)
     if len(names) == 1:
         axes = [axes]
     for i, (ax, name) in enumerate(zip(axes, names)):
-        _draw_ablation_on_ax(ax, law_logs[name], e_target, law_name=name,
+        label = f"{name}  ({_FUNCTION_CLASS.get(name, '')})" if _FUNCTION_CLASS.get(name) else name
+        _draw_ablation_on_ax(ax, law_logs[name], e_target, law_name=label,
                              price=prices.get(name), show_ylabel=(i == 0))
 
-    fig.suptitle("The price of a prior — the gap grows with law complexity", fontsize=15, y=1.02)
+    fig.suptitle("The price of a prior — across function classes (geomean over 3 seeds, "
+                 "first E* crossing)", fontsize=14, y=1.02)
     fig.tight_layout()
     Path(save_path).parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(save_path, dpi=130, bbox_inches="tight")
