@@ -51,6 +51,13 @@ h2.head{font-size:clamp(24px,3.3vw,42px);font-weight:780;letter-spacing:-.02em;l
 .cols{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center;margin-top:16px}
 .plotwrap{width:100%}
 .cap{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.caprow{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:8px}
+.caprow .cap{margin-bottom:0}
+.glegend{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
+.glegend i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.glegend i.t{background:var(--teal)} .glegend i.a{background:var(--amber)}
+.glegend i.r{width:15px;height:0;border-radius:0;border-top:2px dotted var(--accent)}
+.glegend b{font-weight:400;margin-right:10px}
 .statline{display:flex;gap:42px;margin-top:22px;flex-wrap:wrap}
 .stat .n{font-family:var(--mono);font-size:clamp(26px,3.4vw,46px);font-weight:800;letter-spacing:-.02em}
 .stat .n.teal{color:var(--teal)} .stat .n.amber{color:var(--amber)} .stat .n.white{color:var(--ink)}
@@ -135,14 +142,19 @@ ul.clean{margin:.4em 0;padding-left:1.2em} ul.clean li{margin:.4em 0;color:#d2d2
     <h2 class="head step">A prior is worthless on a simple law —<br/>and worth <span style="color:var(--teal)">~20× compute</span> on a complex one.</h2>
     <div class="cols">
       <div class="step">
-        <div class="cap">Kepler · 1 input · control</div>
+        <div class="caprow"><span class="cap">Kepler · 1 input · control</span>
+          <span class="glegend"><i class="t"></i><b>priors</b><i class="a"></i><b>anon</b></span></div>
         <div id="gapKepler" class="plotwrap" style="height:30vh"></div>
       </div>
       <div class="step">
-        <div class="cap">Newton · 3 inputs · interaction structure</div>
+        <div class="caprow"><span class="cap">Newton · 3 inputs · interaction structure</span>
+          <span class="glegend"><i class="t"></i><b>priors</b><i class="a"></i><b>anon</b></span></div>
         <div id="gapNewton" class="plotwrap" style="height:30vh"></div>
       </div>
     </div>
+    <div class="step" style="font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:8px;letter-spacing:.02em;max-width:1080px">
+      Crossings = geomean over the 3 seeds (B<sub>priors</sub>&nbsp;5.3, B<sub>anon</sub>&nbsp;107 → 20.1×, the headline).
+      Curves are smoothed trends anchored to those crossings · per-seed PRIOR_PRICE 1.7–100×.</div>
     <div class="oneline step" style="margin-top:6px"><span class="mut">The horizontal gap on the </span>E*<span class="mut">
       line is</span> PRIOR_PRICE<span class="mut"> — the compute the prior buys you. Same engine, same data; only the
       variable names change.</span></div>
@@ -152,7 +164,8 @@ ul.clean{margin:.4em 0;padding-left:1.2em} ul.clean li{margin:.4em 0;color:#d2d2
   <section class="slide" data-chart="spread">
     <div class="slabel"><span class="chip"><span class="id">03</span> GAMBLE vs CERTAINTY <span class="sector"></span></span></div>
     <h2 class="head step">Without the prior, discovery is a gamble.<br/>With it, discovery is <span style="color:var(--teal)">certain.</span></h2>
-    <div class="step"><div class="cap" style="margin-top:14px">Newton · every seed · error vs compute (log–log)</div>
+    <div class="step"><div class="caprow" style="margin-top:14px"><span class="cap">Newton · every seed · error vs compute (log–log)</span>
+        <span class="glegend"><i class="t"></i><b>priors (3 seeds)</b><i class="a"></i><b>anon (3 seeds)</b></span></div>
       <div id="spread" class="plotwrap" style="height:42vh"></div></div>
     <div class="statline step">
       <div class="stat"><div class="n teal">5–8</div><div class="l">priors · programs to converge · every seed</div></div>
@@ -199,7 +212,8 @@ ul.clean{margin:.4em 0;padding-left:1.2em} ul.clean li{margin:.4em 0;color:#d2d2
     <div class="slabel"><span class="chip"><span class="id">05</span> WHEN COMPUTE IS FREE <span class="sector"></span></span></div>
     <h2 class="head step">The price is paid in compute.<br/>Make compute free, and its <span style="color:var(--teal)">felt cost goes to zero.</span></h2>
     <div class="cols" style="margin-top:8px">
-      <div class="step"><div class="cap">Newton · wall-clock to discovery vs throughput</div>
+      <div class="step"><div class="caprow"><span class="cap">Newton · wall-clock to discovery vs throughput</span>
+          <span class="glegend"><i class="t"></i><b>priors</b><i class="a"></i><b>anon</b><i class="r"></i><b>R now</b></span></div>
         <div id="asym" class="plotwrap" style="height:36vh"></div></div>
       <div class="step">
         <div class="sliderbox">
