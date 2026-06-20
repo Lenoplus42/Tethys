@@ -348,4 +348,6 @@ def run_search(dataset: Dataset, budget: int, seed: int, batch_size: int = BATCH
         total_prompt_tokens=rec.total_prompt_tokens,
         total_completion_tokens=rec.total_completion_tokens,
         token_trace=rec.token_trace,
+        fitted_params=tuple(best[1].fitted_params) if best else (),
+        true_law_str=dataset.true_law_str,
     )

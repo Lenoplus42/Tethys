@@ -76,3 +76,7 @@ class RunLog:
     total_prompt_tokens: int = 0
     total_completion_tokens: int = 0
     token_trace: list[tuple] = field(default_factory=list)  # (programs_evaluated, cumulative_completion_tokens)
+    # self-describing record so a saved RunLog can redraw curves + reveal the law
+    # WITHOUT re-running the engine or calling the LLM:
+    fitted_params: tuple = ()       # constants fitted to best_code (for the symbolic reveal)
+    true_law_str: str = ""          # ground-truth law string (e.g. "Y = G*A*B/C**2")

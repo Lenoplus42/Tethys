@@ -14,6 +14,7 @@ CLI (the unified entry — replaces the /tmp temp runners):
 
 import dataclasses
 import json
+import time
 import warnings
 from pathlib import Path
 
@@ -253,12 +254,30 @@ def plot_comparison(law_logs, save_path, e_target=E_TARGET, prices=None, order=N
 
 
 # ---------------------------------------------------------------------------
-# Serialization (so plots/reveal regenerate without re-running / re-spending)
+# Persistence  — the JSON SCHEMA below is the CONTRACT a downstream dashboard
+# reads to redraw EVERYTHING (curves, gap, reveal) WITHOUT re-running the engine
+# or calling the LLM. This decouples "running the experiment" from "displaying it".
+#
+# Layout (each sweep is self-contained and never overwrites another):
+#   runlogs/<law>_b<budget>_n<seeds>_<YYYYMMDD-HHMMSS>/
+#       <law>_<condition>_seed<seed>.json   # one COMPLETE RunLog each (see below)
+#       summary.json                        # PRIOR_PRICE (program+token), per-seed B's, convergence
+#       ablation_<law>.png                  # the rendered curve
+#   runlogs/<law>_latest -> <that sweep dir>  # symlink to the most recent good sweep
+#
+# RunLog JSON (reload-sufficient, via dataclasses.asdict on the amended RunLog):
+#   law_name, condition, seed, budget, best_test_error,
+#   error_trace [[evaluated, best_err], ...], token_trace [[evaluated, cum_completion_tokens], ...],
+#   total_prompt_tokens, total_completion_tokens,
+#   best_code, fitted_params [..], true_law_str
+#   -> best_code + fitted_params + true_law_str are enough for core.reveal OFFLINE.
+#
+# summary.json:
+#   {law, true_law_str, budget, seeds, e_target, timestamp,
+#    convergence: {anon: "k/n", priors: "k/n"},
+#    prior_price: {mean,std,min,max,n}, prior_price_tokens: {...},
+#    per_seed: {seed: {B_priors,B_anon,price, B_priors_tokens,B_anon_tokens,price_tokens}}}
 # ---------------------------------------------------------------------------
-def _runlog_path(out_dir, law_name, condition, seed):
-    return Path(out_dir) / f"{law_name}_{condition}_seed{seed}.json"
-
-
 def save_runlog(log, path):
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w") as f:
@@ -270,20 +289,77 @@ def load_runlog(path) -> RunLog:
         return RunLog(**json.load(f))
 
 
-def save_sweep(logs, out_dir):
+def sweep_dirname(law_name, budget, seeds):
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    return f"{law_name}_b{budget}_n{'-'.join(str(s) for s in seeds)}_{stamp}"
+
+
+def save_sweep(logs, sweep_dir):
+    """Write every RunLog (one COMPLETE JSON per condition×seed) into sweep_dir."""
+    sweep_dir = Path(sweep_dir)
+    sweep_dir.mkdir(parents=True, exist_ok=True)
     for condition, runs in logs.items():
         for log in runs:
-            save_runlog(log, _runlog_path(out_dir, log.law_name, condition, log.seed))
+            save_runlog(log, sweep_dir / f"{log.law_name}_{condition}_seed{log.seed}.json")
+    return sweep_dir
 
 
-def load_sweep(out_dir, law_name, seeds) -> dict:
+def build_summary(law, budget, seeds, e_target, price, logs):
+    def _rate(cond):
+        runs = logs.get(cond, [])
+        crossed = sum(1 for lg in runs if first_crossing(lg.error_trace, lg.token_trace, e_target)[0] is not None)
+        return f"{crossed}/{len(runs)}"
+    return {
+        "law": law.name,
+        "true_law_str": law.true_law_str,
+        "budget": budget,
+        "seeds": list(seeds),
+        "e_target": e_target,
+        "timestamp": time.strftime("%Y%m%d-%H%M%S"),
+        "convergence": {"anon": _rate("anon"), "priors": _rate("priors")},
+        "prior_price": price["prior_price"],
+        "prior_price_tokens": price["prior_price_tokens"],
+        "per_seed": price["per_seed"],
+    }
+
+
+def save_summary(summary, sweep_dir):
+    with open(Path(sweep_dir) / "summary.json", "w") as f:
+        json.dump(summary, f, indent=2)
+
+
+def load_sweep(sweep_dir):
+    """Load a sweep DIRECTORY -> (logs {condition:[RunLog]}, summary dict or None).
+    Groups by each RunLog's own `condition` field (filenames are just convenience)."""
+    sweep_dir = Path(sweep_dir)
     logs = {"priors": [], "anon": []}
-    for condition in ("priors", "anon"):
-        for seed in seeds:
-            path = _runlog_path(out_dir, law_name, condition, seed)
-            if path.exists():
-                logs[condition].append(load_runlog(path))
-    return logs
+    for p in sorted(sweep_dir.glob("*.json")):
+        if p.name == "summary.json":
+            continue
+        log = load_runlog(p)
+        logs.setdefault(log.condition, []).append(log)
+    summary = None
+    sp = sweep_dir / "summary.json"
+    if sp.exists():
+        with open(sp) as f:
+            summary = json.load(f)
+    return logs, summary
+
+
+def update_latest(out_dir, law_name, sweep_dir):
+    """Point runlogs/<law>_latest at the most recent good sweep (relative symlink)."""
+    link = Path(out_dir) / f"{law_name}_latest"
+    if link.is_symlink() or link.exists():
+        link.unlink()
+    link.symlink_to(Path(sweep_dir).name)
+    return link
+
+
+def resolve_sweep_dir(out_dir, law_name, explicit=None):
+    """A specific --dir, else runlogs/<law>_latest."""
+    if explicit:
+        return Path(explicit)
+    return Path(out_dir) / f"{law_name}_latest"
 
 
 # ---------------------------------------------------------------------------
@@ -325,17 +401,21 @@ def main(argv=None):
     p.add_argument("--out", default="runlogs")
     p.add_argument("--e-target", type=float, default=E_TARGET)
     p.add_argument("--no-run", action="store_true",
-                   help="reload saved RunLogs and re-plot/re-price WITHOUT spending tokens")
+                   help="reload the saved sweep (--dir or <law>_latest) and re-plot/re-price")
+    p.add_argument("--dir", default=None, help="explicit sweep dir to reload (else <law>_latest)")
     args = p.parse_args(argv)
 
     seeds = tuple(int(s) for s in args.seeds.split(","))
     out_dir = Path(args.out)
 
-    # combined everything-plot from saved logs (the escalation story)
+    # combined everything-plot from each law's latest saved sweep (the escalation story)
     if args.compare:
         names = [n.strip() for n in args.compare.split(",")]
-        law_logs = {n: load_sweep(out_dir, n, seeds) for n in names}
-        prices = {n: compute_prior_price(lg, e_target=args.e_target) for n, lg in law_logs.items()}
+        law_logs, prices = {}, {}
+        for n in names:
+            logs, _ = load_sweep(resolve_sweep_dir(out_dir, n))
+            law_logs[n] = logs
+            prices[n] = compute_prior_price(logs, e_target=args.e_target)
         png = plot_comparison(law_logs, out_dir / "ablation_comparison.png",
                               e_target=args.e_target, prices=prices)
         for n in names:
@@ -348,15 +428,24 @@ def main(argv=None):
     law = _LAW_BY_NAME[args.law]
 
     if args.no_run:
-        logs = load_sweep(out_dir, law.name, seeds)
-    else:
-        logs = sweep_ablation(law, args.budget, seeds)
-        save_sweep(logs, out_dir)
+        sweep_dir = resolve_sweep_dir(out_dir, law.name, args.dir)
+        logs, _ = load_sweep(sweep_dir)
+        price = compute_prior_price(logs, e_target=args.e_target)
+        png = plot_ablation(logs, Path(sweep_dir) / f"ablation_{law.name}.png",
+                            e_target=args.e_target, law_name=law.name, price=price)
+        _print_summary(law, price, png)
+        return
 
+    logs = sweep_ablation(law, args.budget, seeds)
     price = compute_prior_price(logs, e_target=args.e_target)
-    png = plot_ablation(logs, out_dir / f"ablation_{law.name}.png",
+    sweep_dir = out_dir / sweep_dirname(law.name, args.budget, seeds)
+    save_sweep(logs, sweep_dir)
+    save_summary(build_summary(law, args.budget, seeds, args.e_target, price, logs), sweep_dir)
+    png = plot_ablation(logs, sweep_dir / f"ablation_{law.name}.png",
                         e_target=args.e_target, law_name=law.name, price=price)
+    update_latest(out_dir, law.name, sweep_dir)
     _print_summary(law, price, png)
+    print(f"sweep dir      : {sweep_dir}  (runlogs/{law.name}_latest -> it)")
 
 
 if __name__ == "__main__":

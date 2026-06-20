@@ -1,7 +1,8 @@
 """Reveal unit tests (pure-logic, NO network)."""
 
+from core.contracts import RunLog
 from core.laws import NEWTON
-from core.reveal import simplify_discovered
+from core.reveal import reveal, simplify_discovered
 
 # A bloated-but-equivalent best_code (the kind anon produces): full quadratic basis
 # + a guarded ratio term. With all coeffs ~0 except the ratio term ~1, it reduces
@@ -42,3 +43,14 @@ def test_clean_form_also_matches():
     params = (1.0, 1.0, 1.0, 2.0)   # c0=1, exponents 1,1,2 -> a*b/c**2
     _, simplified, true_expr, matches = simplify_discovered(clean, params, NEWTON)
     assert matches is True
+
+
+def test_reveal_from_runlog_offline_uses_stored_params():
+    # reveal(runlog) must work from stored fitted_params alone — no dataset/LLM
+    log = RunLog(
+        law_name="newton", condition="priors", budget=300, seed=0,
+        best_test_error=0.0, error_trace=[(8, 0.0)],
+        best_code=BLOATED_NEWTON,
+        fitted_params=BLOATED_PARAMS, true_law_str=NEWTON.true_law_str,
+    )
+    assert reveal(log) is True     # prints the 3 forms; folds to a*b/c**2, matches=True

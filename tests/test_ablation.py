@@ -3,14 +3,21 @@
 import pytest
 
 from core.ablation_experiment import (
+    build_summary,
     compute_prior_price,
     first_crossing,
     load_runlog,
+    load_sweep,
     plot_ablation,
     plot_comparison,
     save_runlog,
+    save_summary,
+    save_sweep,
+    sweep_dirname,
+    update_latest,
 )
 from core.contracts import RunLog
+from core.laws import NEWTON
 
 
 def _mk(condition, seed, error_trace, token_trace):
@@ -21,6 +28,7 @@ def _mk(condition, seed, error_trace, token_trace):
         total_prompt_tokens=0,
         total_completion_tokens=(token_trace[-1][1] if token_trace else 0),
         token_trace=token_trace,
+        fitted_params=(1.0,), true_law_str="Y = G * A * B / C**2  (G=1.0)",
     )
 
 
@@ -117,6 +125,36 @@ def test_runlog_serialization_roundtrip(tmp_path):
     assert (back.law_name, back.condition, back.seed) == ("newton", "anon", 0)
     assert [tuple(p) for p in back.error_trace] == [tuple(p) for p in log.error_trace]
     assert back.best_code == log.best_code
+    # the self-describing fields survive (reload-sufficient for offline reveal)
+    assert tuple(back.fitted_params) == (1.0,)
+    assert back.true_law_str == "Y = G * A * B / C**2  (G=1.0)"
     # loaded (list-based) traces still feed the price computation
     bp, _ = first_crossing(back.error_trace, back.token_trace, 1e-4)
     assert bp == pytest.approx(50.0)
+
+
+def test_sweep_dir_save_load_roundtrip(tmp_path):
+    logs = {"anon": [_mk("anon", 0, ANON_ERR, ANON_TOK), _mk("anon", 1, ANON_ERR, ANON_TOK)],
+            "priors": [_mk("priors", 0, PRI_ERR, PRI_TOK), _mk("priors", 1, PRI_ERR, PRI_TOK)]}
+    sweep_dir = tmp_path / sweep_dirname("newton", 300, (0, 1))
+    save_sweep(logs, sweep_dir)
+    price = compute_prior_price(logs, e_target=1e-4)
+    save_summary(build_summary(NEWTON, 300, (0, 1), 1e-4, price, logs), sweep_dir)
+
+    back_logs, back_summary = load_sweep(sweep_dir)
+    assert len(back_logs["anon"]) == 2 and len(back_logs["priors"]) == 2
+    # grouped by each RunLog's own condition field
+    assert all(lg.condition == "anon" for lg in back_logs["anon"])
+    assert back_summary["law"] == "newton"
+    assert back_summary["convergence"]["anon"] == "2/2"     # both anon seeds crossed
+    assert back_summary["prior_price"]["n"] == 2
+    # reloaded logs reprice identically (offline, no engine)
+    assert compute_prior_price(back_logs, e_target=1e-4)["prior_price"]["mean"] == pytest.approx(6.25)
+
+
+def test_update_latest_symlink(tmp_path):
+    sweep_dir = tmp_path / sweep_dirname("newton", 600, (0, 1, 2))
+    sweep_dir.mkdir(parents=True)
+    link = update_latest(tmp_path, "newton", sweep_dir)
+    assert link.is_symlink()
+    assert (tmp_path / "newton_latest").resolve() == sweep_dir.resolve()

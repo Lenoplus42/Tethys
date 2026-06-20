@@ -131,6 +131,10 @@ class RunLog:
     total_prompt_tokens: int = 0
     total_completion_tokens: int = 0
     token_trace: list[tuple] = field(default_factory=list)  # (programs_evaluated, cumulative_completion_tokens)
+    # self-describing record so a saved RunLog redraws curves + reveals the law OFFLINE
+    # (no engine, no LLM) — the JSON schema a downstream dashboard reads (Module 6):
+    fitted_params: tuple = ()       # constants fitted to best_code (for the symbolic reveal)
+    true_law_str: str = ""          # ground-truth law string
 ```
 
 ---

@@ -107,9 +107,9 @@ def reveal_from_parts(best_code: str, fitted_params, law) -> bool:
 
 
 def reveal(runlog: RunLog) -> bool:
-    """Reveal the law in a RunLog. Self-sufficient: rebuilds the (deterministic)
-    dataset from law_name+condition+seed and re-fits best_code to recover the
-    constants (RunLog does not store fitted_params)."""
+    """Reveal the law in a RunLog. Prefers the stored fitted_params (so a saved
+    RunLog reveals OFFLINE — no dataset rebuild, no LLM); falls back to re-fitting
+    on the deterministic dataset only if fitted_params is absent (older logs)."""
     law = _LAW_REGISTRY.get(runlog.law_name)
     if law is None:
         print(f"(unknown law {runlog.law_name!r}; cannot reveal)")
@@ -118,17 +118,19 @@ def reveal(runlog: RunLog) -> bool:
         print("(no best_code in runlog; nothing to reveal)")
         return False
 
-    ds = make_dataset(law, runlog.condition, runlog.seed)
-    ns: dict = {}
-    try:
-        exec(runlog.best_code, ns)
-    except Exception as e:
-        print(f"(best_code exec failed: {e})")
-        return False
-    params = fit_params(ns, ds)
-    if params is None:
-        print("(re-fit failed; cannot substitute constants)")
-        return False
+    params = tuple(runlog.fitted_params) if runlog.fitted_params else None
+    if params is None:                      # fallback for pre-schema logs (no LLM, just curve_fit)
+        ds = make_dataset(law, runlog.condition, runlog.seed)
+        ns: dict = {}
+        try:
+            exec(runlog.best_code, ns)
+        except Exception as e:
+            print(f"(best_code exec failed: {e})")
+            return False
+        params = fit_params(ns, ds)
+        if params is None:
+            print("(re-fit failed; cannot substitute constants)")
+            return False
     return reveal_from_parts(runlog.best_code, params, law)
 
 
