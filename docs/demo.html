@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>The Price of a Prior — Tethys</title>
+<script>
+window.MathJax = { tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']]}, svg:{fontCache:'global'} };
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" async></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.27.0/plotly.min.js"></script>
+<style>
+:root{
+  --bg:#07070a; --bg2:#0d0e12; --ink:#f4f4f7; --muted:#8a8a99; --faint:#52525f;
+  --teal:#2dd4bf; --amber:#f5b932; --red:#ef4444; --line:#1d1e26; --accent:#a78bfa;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --sans:"Helvetica Neue",-apple-system,BlinkMacSystemFont,Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--ink);font-family:var(--sans);overflow:hidden}
+body{background-image:radial-gradient(circle at 1px 1px, rgba(255,255,255,0.022) 1px, transparent 0);background-size:22px 22px}
+.chrome{position:fixed;inset:0;pointer-events:none;z-index:40}
+.tick{position:absolute;width:14px;height:14px;border:0 solid var(--faint)}
+.tick.tl{top:18px;left:18px;border-top-width:1.5px;border-left-width:1.5px}
+.tick.tr{top:18px;right:18px;border-top-width:1.5px;border-right-width:1.5px}
+.tick.bl{bottom:18px;left:18px;border-bottom-width:1.5px;border-left-width:1.5px}
+.tick.br{bottom:18px;right:18px;border-bottom-width:1.5px;border-right-width:1.5px}
+.wordmark{position:absolute;top:26px;left:40px;font-family:var(--mono);font-size:11px;letter-spacing:.28em;color:var(--muted);text-transform:uppercase}
+.wordmark b{color:var(--ink)}
+.counter{position:absolute;top:24px;right:40px;font-family:var(--mono);font-size:13px;letter-spacing:.14em;color:var(--muted)}
+.counter b{color:var(--teal);font-size:16px}
+.progress{position:absolute;top:0;left:0;height:2px;background:var(--teal);transition:width .4s ease;box-shadow:0 0 12px var(--teal)}
+.hint{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;color:var(--faint);text-transform:uppercase}
+.chip{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--teal)}
+.chip .id{background:var(--teal);color:#04110f;font-weight:800;padding:2px 7px;border-radius:3px;letter-spacing:.05em}
+.sector{display:inline-block;width:30px;height:4px;position:relative;vertical-align:middle}
+.sector::before,.sector::after{content:"";position:absolute;top:-7px;height:18px;width:3px;transform:skewX(-22deg)}
+.sector::before{left:8px;background:var(--amber)} .sector::after{left:15px;background:var(--red)}
+.deck{position:relative;height:100vh;width:100vw}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:0 7vw;opacity:0;visibility:hidden;transform:translateY(14px);transition:opacity .5s ease, transform .5s ease;pointer-events:none}
+.slide.active{opacity:1;visibility:visible;transform:none;pointer-events:auto}
+.slabel{margin-bottom:22px}
+h1.title{font-size:clamp(38px,7vw,92px);font-weight:800;letter-spacing:-.03em;line-height:.96}
+h1.title .thin{font-weight:300;color:var(--muted)}
+.sub{margin-top:20px;font-size:clamp(15px,1.6vw,20px);color:var(--muted);max-width:820px;line-height:1.5}
+h2.head{font-size:clamp(24px,3.3vw,42px);font-weight:780;letter-spacing:-.02em;line-height:1.06;max-width:1120px}
+.oneline{font-size:clamp(16px,1.85vw,24px);line-height:1.42;max-width:1040px;color:var(--ink);font-weight:600}
+.oneline .teal{color:var(--teal)} .oneline .amber{color:var(--amber)} .oneline .mut{color:var(--muted);font-weight:400}
+.step{opacity:0;transform:translateY(10px);transition:opacity .55s ease, transform .55s ease}
+.step.on{opacity:1;transform:none}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center;margin-top:16px}
+.plotwrap{width:100%}
+.cap{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.statline{display:flex;gap:42px;margin-top:22px;flex-wrap:wrap}
+.stat .n{font-family:var(--mono);font-size:clamp(26px,3.4vw,46px);font-weight:800;letter-spacing:-.02em}
+.stat .n.teal{color:var(--teal)} .stat .n.amber{color:var(--amber)} .stat .n.white{color:var(--ink)}
+.stat .l{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+.eqs{background:rgba(13,14,18,.66);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:9px;padding:2px 22px;margin:10px 0;max-width:860px;overflow-x:auto}
+.eqcap{font-family:var(--mono);font-size:12px;color:var(--muted);margin:2px 0 12px;letter-spacing:.04em}
+.eqcap b{color:var(--teal)}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:18px;max-width:1080px}
+.card{background:var(--bg2);border:1px solid var(--line);border-radius:11px;padding:18px 22px}
+.card.truth{border-left:3px solid var(--amber)} .card.disc{border-left:3px solid var(--teal)}
+.card .h{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.codecard{font-family:var(--mono);font-size:clamp(13px,1.35vw,17px);line-height:1.6;color:#d8d8e2}
+.codecard .kw{color:var(--accent)} .codecard .fn{color:var(--teal)} .codecard .num{color:var(--amber)}
+.maptbl{font-family:var(--mono);font-size:clamp(12.5px,1.3vw,15px);line-height:1.5;margin-top:18px;max-width:900px;border-collapse:collapse;width:100%}
+.maptbl td{padding:6px 14px 6px 0;border-bottom:1px solid var(--line);white-space:nowrap}
+.maptbl .p{color:var(--amber)} .maptbl .arrow{color:var(--faint)} .maptbl .m{color:var(--teal)}
+.badge{display:inline-block;background:rgba(45,212,191,.12);border:1px solid var(--teal);color:var(--teal);padding:5px 13px;border-radius:6px;font-family:var(--mono);font-size:13px;letter-spacing:.05em}
+.foldnote{margin-top:16px;color:var(--muted);font-size:14px;max-width:900px;line-height:1.55}
+.foldnote b{color:var(--teal)}
+.sliderbox{margin-top:0;max-width:680px}
+input[type=range]{width:100%;accent-color:var(--teal);height:6px;cursor:pointer}
+.rlabel{font-family:var(--mono);font-size:13px;color:var(--muted);margin-bottom:8px;letter-spacing:.06em}
+.rlabel b{color:var(--teal)}
+.rtag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);border:1px solid var(--line);padding:2px 8px;border-radius:999px;margin-left:8px}
+.appendix{position:fixed;inset:0;z-index:60;background:rgba(5,5,8,.97);overflow-y:auto;padding:60px 8vw 100px;opacity:0;visibility:hidden;transition:opacity .35s ease}
+.appendix.open{opacity:1;visibility:visible}
+.appendix h2{font-size:23px;margin:32px 0 10px;color:var(--accent);font-weight:720}
+.appendix h3{font-size:16px;margin:18px 0 6px;color:var(--teal)}
+.appendix p{color:#d2d2dc;max-width:880px;line-height:1.62;margin:8px 0}
+.appendix .eq{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:4px 18px;margin:12px 0;overflow-x:auto;max-width:920px}
+.appendix code{font-family:var(--mono);font-size:13px;background:var(--bg2);border:1px solid var(--line);padding:1px 6px;border-radius:5px;color:#cfcfe6}
+.appendix table{border-collapse:collapse;width:100%;max-width:920px;font-size:14px;margin:10px 0}
+.appendix td,.appendix th{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+.appendix th{color:var(--accent)}
+.closeapp{position:fixed;top:26px;right:40px;z-index:61;font-family:var(--mono);font-size:12px;color:var(--muted);border:1px solid var(--line);background:var(--bg2);padding:8px 14px;border-radius:7px;cursor:pointer;letter-spacing:.1em}
+.applabel{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--teal)}
+.note{border-left:2px solid var(--accent);padding:4px 0 4px 14px;color:var(--muted);font-size:14px;margin:14px 0;max-width:880px}
+ul.clean{margin:.4em 0;padding-left:1.2em} ul.clean li{margin:.4em 0;color:#d2d2dc;max-width:860px;line-height:1.55}
+@media(max-width:860px){.cols,.compare{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="chrome">
+  <div class="progress" id="prog"></div>
+  <div class="tick tl"></div><div class="tick tr"></div><div class="tick bl"></div><div class="tick br"></div>
+  <div class="wordmark">TETHYS <b>// THE PRICE OF A PRIOR</b></div>
+  <div class="counter"><b id="cNow">00</b> / <span id="cTot">00</span></div>
+  <div class="hint" id="hint">SPACE / CLICK → ADVANCE &nbsp;·&nbsp; A → MATH APPENDIX</div>
+</div>
+
+<div class="deck" id="deck">
+
+  <!-- 0 · TITLE -->
+  <section class="slide">
+    <div class="slabel step"><span class="chip"><span class="sector"></span> RACE START</span></div>
+    <h1 class="title step">THE PRICE<br/>OF A <span class="thin">PRIOR.</span></h1>
+    <p class="sub step">A Solomonoff measurement of the exchange rate between <b style="color:var(--ink)">inference
+      compute</b> and <b style="color:var(--ink)">discovery</b>. One equation-discovery engine, run with an AI's prior
+      switched on, then off, on identical data — and the difference priced in compute.</p>
+    <p class="sub step" style="color:var(--teal)">This run: Kepler ≈ 1.05× · Newton ≈ 20× · and the engine rediscovers m₁m₂/r² blind.</p>
+  </section>
+
+  <!-- 1 · THE QUESTION -->
+  <section class="slide">
+    <div class="slabel"><span class="chip"><span class="id">01</span> THE QUESTION <span class="sector"></span></span></div>
+    <h2 class="head step">What could you discover with <span style="color:var(--teal)">infinite compute?</span></h2>
+    <p class="sub step" style="max-width:960px">Discovery is a <b style="color:var(--ink)">search over programs</b>.
+      Give that search unlimited inference and it can sweep the whole space of hypotheses — so the bottleneck stops
+      being <i>can we compute it</i> and becomes <i>how well can we guess where to look</i>. That guess is the
+      <b style="color:var(--teal)">prior</b>.</p>
+    <div class="step eqs">$$M(x)=\!\!\sum_{p\,:\,U(p)=x}\!\! 2^{-|p|}$$</div>
+    <div class="step eqcap"><b>Solomonoff induction</b> — the optimal predictor: sum over every program that reproduces the data, weighted by simplicity $2^{-|p|}$. It is uncomputable.</div>
+    <div class="step eqs">$$Kt(x)=\min_{p}\big(\,|p|\;+\;\log_2 t(p)\,\big)$$</div>
+    <div class="step eqcap"><b>Levin search</b> — its computable form. It prices description length <i>and</i> compute in one quantity; $\log_2 t(p)$ <b>is</b> inference compute.</div>
+    <div class="oneline step" style="margin-top:8px"><span class="mut">Infinite compute makes the </span>$\log_2 t$<span class="mut"> term free — you converge to ranking by simplicity alone: Solomonoff's ideal. That is why we built on it. Our engine is a tractable shadow of Solomonoff/Levin; our experiment prices the prior </span><span class="teal">inside</span><span class="mut"> it.</span></div>
+  </section>
+
+  <!-- 2 · THE GAP -->
+  <section class="slide" data-chart="gap">
+    <div class="slabel"><span class="chip"><span class="id">02</span> THE GAP <span class="sector"></span></span></div>
+    <h2 class="head step">A prior is worthless on a simple law —<br/>and worth <span style="color:var(--teal)">~20× compute</span> on a complex one.</h2>
+    <div class="cols">
+      <div class="step">
+        <div class="cap">Kepler · 1 input · control</div>
+        <div id="gapKepler" class="plotwrap" style="height:30vh"></div>
+      </div>
+      <div class="step">
+        <div class="cap">Newton · 3 inputs · interaction structure</div>
+        <div id="gapNewton" class="plotwrap" style="height:30vh"></div>
+      </div>
+    </div>
+    <div class="oneline step" style="margin-top:6px"><span class="mut">The horizontal gap on the </span>E*<span class="mut">
+      line is</span> PRIOR_PRICE<span class="mut"> — the compute the prior buys you. Same engine, same data; only the
+      variable names change.</span></div>
+  </section>
+
+  <!-- 3 · GAMBLE vs CERTAINTY (spread) -->
+  <section class="slide" data-chart="spread">
+    <div class="slabel"><span class="chip"><span class="id">03</span> GAMBLE vs CERTAINTY <span class="sector"></span></span></div>
+    <h2 class="head step">Without the prior, discovery is a gamble.<br/>With it, discovery is <span style="color:var(--teal)">certain.</span></h2>
+    <div class="step"><div class="cap" style="margin-top:14px">Newton · every seed · error vs compute (log–log)</div>
+      <div id="spread" class="plotwrap" style="height:42vh"></div></div>
+    <div class="statline step">
+      <div class="stat"><div class="n teal">5–8</div><div class="l">priors · programs to converge · every seed</div></div>
+      <div class="stat"><div class="n amber">10 → 502</div><div class="l">anon · programs · pure luck of the draw</div></div>
+      <div class="stat"><div class="n white">1.7–100×</div><div class="l">per-seed price · geomean 20×</div></div>
+    </div>
+  </section>
+
+  <!-- 4 · THE REVEAL -->
+  <section class="slide">
+    <div class="slabel"><span class="chip"><span class="id">04</span> THE REVEAL <span class="sector"></span></span></div>
+    <h2 class="head step">Strip every name. From numbers alone, the engine writes Newton's law.</h2>
+    <div class="compare">
+      <div class="card truth step">
+        <div class="h">Ground truth · Newton, 1687</div>
+        <div style="font-size:clamp(20px,2.4vw,30px);color:var(--ink)">$$F = G\,\dfrac{m_1 m_2}{r^{2}}$$</div>
+        <div class="eqcap" style="margin-top:6px">a constant, a product of masses, an inverse-square distance.</div>
+      </div>
+      <div class="card disc step">
+        <div class="h">Discovered · priors · seed 2 · blind to the word "gravity"</div>
+        <div class="codecard">
+<span class="kw">def</span> <span class="fn">evaluate_law</span>(inputs, params):<br/>
+&nbsp;&nbsp;m1, m2, r = inputs<br/>
+&nbsp;&nbsp;<span class="kw">return</span> params[<span class="num">0</span>]*(m1*m2)/(r**params[<span class="num">1</span>]) + params[<span class="num">2</span>]
+        </div>
+      </div>
+    </div>
+    <table class="maptbl step">
+      <tr><td class="p">params[0] = 1.000</td><td class="arrow">→</td><td class="m">G</td><td style="color:var(--muted)">gravitational constant (normalized to 1)</td></tr>
+      <tr><td class="p">params[1] = 2.000</td><td class="arrow">→</td><td class="m">r²</td><td style="color:var(--muted)">the inverse-square exponent — recovered exactly</td></tr>
+      <tr><td class="p">params[2] = −1.9e-10</td><td class="arrow">→</td><td class="m">≈ 0</td><td style="color:var(--muted)">no constant offset</td></tr>
+    </table>
+    <div class="matchrow step" style="display:flex;align-items:center;gap:18px;margin-top:18px;font-family:var(--mono)">
+      <span style="color:var(--muted)">held-out test error ≈ 1.2 × 10⁻¹⁷</span>
+      <span class="badge">matches true law ✓</span>
+    </div>
+    <div class="foldnote step">With the names stripped, the blind <b style="color:var(--amber)">anon</b> search instead builds a
+      7-parameter superset — a full quadratic basis over a guarded ratio — whose junk coefficients fit to ≈0; the
+      symbolic reveal folds it back to the same <b>m₁m₂/r²</b>. Same truth, ~20× the compute to reach it.</div>
+  </section>
+
+  <!-- 5 · WHEN COMPUTE IS FREE -->
+  <section class="slide" data-chart="asym">
+    <div class="slabel"><span class="chip"><span class="id">05</span> WHEN COMPUTE IS FREE <span class="sector"></span></span></div>
+    <h2 class="head step">The price is paid in compute.<br/>Make compute free, and its <span style="color:var(--teal)">felt cost goes to zero.</span></h2>
+    <div class="cols" style="margin-top:8px">
+      <div class="step"><div class="cap">Newton · wall-clock to discovery vs throughput</div>
+        <div id="asym" class="plotwrap" style="height:36vh"></div></div>
+      <div class="step">
+        <div class="sliderbox">
+          <div class="rlabel">INFERENCE THROUGHPUT &nbsp; R = <b id="vR">—</b> programs/sec <span class="rtag" id="rTag">today</span></div>
+          <input id="sR" type="range" min="0" max="7" step="0.05" value="1.1"/>
+        </div>
+        <div class="statline" style="margin-top:24px">
+          <div class="stat"><div class="n teal" id="aTp">—</div><div class="l">priors · time to discovery</div></div>
+          <div class="stat"><div class="n amber" id="aTa">—</div><div class="l">anon · time to discovery</div></div>
+        </div>
+        <div class="statline" style="margin-top:16px">
+          <div class="stat"><div class="n white" id="aDt">—</div><div class="l">Δt · felt price of the prior</div></div>
+          <div class="stat"><div class="n" style="color:var(--accent)" id="gapNow">20×</div><div class="l">this run's gap · varies by seed &amp; law</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="step eqs" style="margin-top:6px">$$\Delta t \;=\; \frac{B_{\text{anon}}-B_{\text{priors}}}{R}\;\xrightarrow[\;R\to\infty\;]{}\;0$$</div>
+    <div class="oneline step" style="margin-top:2px"><span class="mut">The 20× is </span><span class="amber">this run, this law</span><span class="mut"> — it swings 1.7–100× across seeds and changes for every theorem. What is universal is the limit: </span><span class="teal">whatever the price, free compute drives its felt cost to zero.</span></div>
+  </section>
+
+</div>
+
+<button class="closeapp" id="closeApp" style="display:none">ESC · CLOSE</button>
+<div class="appendix" id="appendix">
+  <div class="applabel">Appendix · mathematical foundations &amp; Q&amp;A armor</div>
+  <h2>Solomonoff induction — the identity of PRIOR_PRICE</h2>
+  <p>Solomonoff induction predicts the next observation by summing over <i>every</i> computable program that
+  reproduces the data, weighting each by $2^{-|p|}$ — Occam's razor as a probability measure.</p>
+  <div class="eq">$$M(x)=\!\!\sum_{p:\,U(p)=x*}\!\! 2^{-|p|}\qquad K(x)=\!\!\min_{p:\,U(p)=x}\!\!|p|\qquad P(p\mid D)\propto P(D\mid p)\,2^{-|p|}$$</div>
+  <p>It is uncomputable. Bound each program's runtime and you get <b>Levin search</b> — exactly what our 500 ms sandbox timeout enforces:</p>
+  <div class="eq">$$Kt(x)=\min_{p:\,U(p)=x}\big(|p|+\log_2 t(p)\big)$$</div>
+  <p>With infinite compute the $\log_2 t$ term is free, and the search converges to ranking by length alone — the
+  Solomonoff-optimal hypothesis. That is the precise sense in which "infinite compute → ideal discovery."</p>
+
+  <h2>The correspondence to our engine</h2>
+  <table>
+    <tr><th>Solomonoff / Levin</th><th>Tethys</th></tr>
+    <tr><td>Hypothesis = program $p$</td><td><code>proposer</code> + <code>sandbox</code> execute candidate <code>evaluate_law</code> functions</td></tr>
+    <tr><td>Simplicity prior $2^{-|p|}$</td><td><code>evaluator.description_length</code> = AST node count (proxy for $K$)</td></tr>
+    <tr><td>Data consistency $P(D\mid p)$</td><td>held-out NMSE; <code>curve_fit</code> sets constants</td></tr>
+    <tr><td>Time bound $\log_2 t(p)$</td><td>500 ms per-candidate kill</td></tr>
+    <tr><td>Universal (blind) prior</td><td><code>anon</code> condition — Sensor_*, no context</td></tr>
+    <tr><td>Informed (learned) prior</td><td><code>priors</code> condition — semantic names activate pretraining</td></tr>
+  </table>
+  <div class="eq">$$\hat p=\arg\max_p\big[\log P(D\mid p)-\lambda\,\ell(p)\big],\qquad \text{PRIOR\_PRICE}=\frac{B_{\text{anon}}}{B_{\text{priors}}}.$$</div>
+  <p class="note"><b>Claim discipline.</b> We compute an argmax, not the full Bayesian mixture; our program space is the
+  LLM-reachable subset, not all Turing machines; $\ell(p)$ is a proxy for $K(p)$. We say "a tractable, LLM-guided MAP
+  shadow of Solomonoff," never "we implement Solomonoff induction."</p>
+
+  <h2>The objection — "isn't this just recitation?"</h2>
+  <p>Kepler and Newton are in the model's training data, so semantic names may trigger recitation, not reasoning.
+  Correct — and it is the experiment's boundary condition, not a flaw. Three reframes:</p>
+  <h3>1 — we price substitutability, not discovery</h3>
+  <p>Anything a prior provides, search (compute) can compensate, at a price of N× compute. Prior and compute are
+  interchangeable currencies; the gap is the exchange rate. When compute is free, the premium vanishes.</p>
+  <h3>2 — known laws are a calibratable proxy</h3>
+  <p>You cannot measure a prior's worth on an unsolved problem — no ground truth. Known laws are the only place to
+  calibrate it: the prior exists <i>and</i> the rediscovery is checkable. Calibrate on the known, extrapolate to the
+  frontier, where the prior is weaker and the compute bill larger.</p>
+  <h3>3 — the prior is a search shortcut, not the source of correctness</h3>
+  <p><code>curve_fit</code> on held-out data is the final arbiter; the prior only changes how fast the right form is
+  proposed, never whether it is accepted. So the gap is pure search-shortcut value — a structure that holds on
+  unsolved problems too.</p>
+  <p class="note"><b>Rehearsed answer.</b> "Yes — they're in the training set, which is exactly why we can calibrate
+  here: we need a prior that exists and a ground truth to check. We measure the compute to compensate a <i>missing</i>
+  prior — 20× on Newton this run — which in the Solomonoff frame is the search bits a semantic prior saves over a
+  uniform one. At the frontier the prior is weaker and the compute larger; when compute is free, a missing prior stops
+  being a barrier. We put the first price on the prior↔compute exchange rate."</p>
+
+  <h2>Why the measurement is clean · and what actually varies</h2>
+  <ul class="clean">
+    <li><b>Bitwise-identical data</b> across conditions (only names + hint differ), enforced by <code>test_auditability</code>.</li>
+    <li><b>Honest x-axis:</b> programs evaluated, never wall-clock. First-crossing of E_TARGET, excluding Occam refinement.</li>
+    <li><b>The gap is run- and law-specific.</b> Newton this run: geomean 20.1×, per-seed 1.7× / 48.8× / 100.4× (heavy-tailed); arithmetic mean 50 ± 40×. Kepler: ~1.05×. A different theorem gives a different price. We report geomean + range, never a single point.</li>
+    <li><b>What is invariant</b> is the limit $\Delta t=(B_{\text{anon}}-B_{\text{priors}})/R\to 0$ — true for any price.</li>
+    <li><b>Offline-reproducible</b> from timestamped RunLog JSON; the demo replays saved data, zero live-LLM dependency.</li>
+  </ul>
+  <p class="note">Provenance: Qwen3-235B-A22B-Instruct via Prime Intellect · E_TARGET = 1e-4 · 3 seeds/condition ·
+  &lt; $0.50 total. Lineage: FunSearch (2023) · LLM-SR (ICLR 2025) · In-Context SR (2024) · Solomonoff (1964) · Levin (1973).</p>
+</div>
+
+<script>
+const DATA = {"kepler":{"traces":{"priors":[[[8,3.325e-32],[13,0.0],[33,0.0]],[[6,9.989e-32],[13,0.0],[27,0.0]],[[6,0.0],[21,0.0]]],"anon":[[[8,0.0],[23,0.0]],[[1,0.01283],[6,0.0001106],[11,5.172e-05],[24,5.172e-05],[34,3.783e-06],[78,4.445e-18],[83,6.47e-19],[92,6.47e-19]],[[6,0.0],[17,0.0]]]},"pp":{"geomean":1.047804868871497,"min":1.0,"max":1.1503797718071305},"seed":{"0":{"B_priors":8.0,"B_anon":8.0,"price":1.0},"1":{"B_priors":6.0,"B_anon":6.902278630842783,"price":1.1503797718071305},"2":{"B_priors":6.0,"B_anon":6.0,"price":1.0}}},"newton":{"traces":{"priors":[[[6,0.0],[29,0.0]],[[5,0.0],[20,0.0]],[[5,0.0],[27,0.0]]],"anon":[[[10,6.456e-18],[14,4.989e-18],[19,3.533e-19],[24,3.533e-19]],[[8,0.2715],[44,0.2396],[62,0.1315],[71,0.0316],[76,0.03072],[155,0.0303],[244,8.758e-18],[255,8.758e-18]],[[1,0.556],[6,0.3575],[11,0.3232],[16,0.2869],[58,0.2698],[76,0.2698],[85,0.2698],[95,0.2498],[133,0.1042],[183,0.0653],[252,0.03629],[267,0.03515],[298,0.02646],[394,0.02585],[409,0.02048],[424,0.007701],[502,1.208e-17],[510,1.208e-17]]]},"pp":{"geomean":20.136046479152423,"min":1.6666666666666667,"max":100.3870146312588},"seed":{"0":{"B_priors":6.0,"B_anon":10.0,"price":1.6666666666666667},"1":{"B_priors":5.0,"B_anon":243.98679973732263,"price":48.79735994746453},"2":{"B_priors":5.0,"B_anon":501.935073156294,"price":100.3870146312588}}}};
+
+const ETARGET=1e-4, FLOOR=1e-10;
+const clamp=e=>Math.max(e,FLOOR);
+const C={bg:'#0d0e12',grid:'#1d1e26',txt:'#8a8a99',teal:'#2dd4bf',amber:'#f5b932',accent:'#a78bfa',red:'#ef4444'};
+const geomean=a=>Math.exp(a.reduce((s,x)=>s+Math.log(x),0)/a.length);
+function cross(law){const s=DATA[law].seed;
+  return {bp:geomean([0,1,2].map(i=>s[i].B_priors)), ba:geomean([0,1,2].map(i=>s[i].B_anon))};}
+function lay(xt,yt,opts={}){
+  return Object.assign({paper_bgcolor:C.bg,plot_bgcolor:C.bg,font:{color:C.txt,family:'ui-monospace,monospace',size:11},
+    margin:{l:56,r:14,t:10,b:42},showlegend:false,
+    xaxis:Object.assign({title:{text:xt,font:{size:10}},type:'log',gridcolor:C.grid,zerolinecolor:C.grid,color:C.txt},opts.x||{}),
+    yaxis:Object.assign({title:{text:yt,font:{size:10}},type:'log',gridcolor:C.grid,zerolinecolor:C.grid,color:C.txt},opts.y||{})});
+}
+const CFG={displayModeBar:false,responsive:true};
+
+// slide 2: gap — double-curve with shaded 20x gap (curves smoothed; crossings = measured budgets)
+function drawGap(div,law){
+  const {bp,ba}=cross(law); const price=DATA[law].pp.geomean;
+  const E0=0.6, Einf=FLOOR, Estar=ETARGET;
+  const tau=b=> b/Math.log((E0-Einf)/(Estar-Einf));
+  const tp=tau(bp), ta=tau(ba);
+  const Bs=[]; for(let i=0;i<=90;i++) Bs.push(Math.pow(10, 3*i/90));   // 1 .. 1000
+  const em=(B,t)=> Einf+(E0-Einf)*Math.exp(-B/t);
+  const big = law==='newton';
+  const t=[
+    {x:Bs,y:Bs.map(B=>em(B,ta)),mode:'lines',line:{color:C.amber,width:3},hoverinfo:'skip'},
+    {x:Bs,y:Bs.map(B=>em(B,tp)),mode:'lines',line:{color:C.teal,width:3},
+      fill:'tonexty',fillcolor:'rgba(167,139,250,0.17)',hoverinfo:'skip'},
+    {x:[1,1000],y:[Estar,Estar],mode:'lines',line:{color:C.accent,width:1.4,dash:'dot'},hoverinfo:'skip'},
+    {x:[bp],y:[Estar],mode:'markers',marker:{color:C.teal,size:11,line:{color:'#04110f',width:2}},hoverinfo:'skip'},
+    {x:[ba],y:[Estar],mode:'markers',marker:{color:C.amber,size:11,line:{color:'#181203',width:2}},hoverinfo:'skip'},
+    {x:[bp,ba],y:[Estar*3.2,Estar*3.2],mode:'lines',line:{color:big?C.accent:C.txt,width:2},hoverinfo:'skip'},
+    {x:[Math.sqrt(bp*ba)],y:[Estar*11],mode:'text',text:['◀ '+price.toFixed(price<2?2:1)+'× compute ▶'],
+      textfont:{color:big?C.accent:C.txt,size:big?16:12},hoverinfo:'skip'},
+    {x:[bp],y:[Estar/14],mode:'text',text:['priors '+bp.toFixed(1)],textfont:{color:C.teal,size:11},hoverinfo:'skip'},
+    {x:[ba],y:[Estar/14],mode:'text',text:['anon '+(ba<20?ba.toFixed(1):Math.round(ba))],textfont:{color:C.amber,size:11},hoverinfo:'skip'}
+  ];
+  Plotly.react(div,t,lay('PROGRAMS EVALUATED  (COMPUTE →)','TEST ERROR (NMSE)',
+    {x:{range:[0,3]},y:{range:[Math.log10(Einf),Math.log10(0.95)]}}),CFG);
+}
+
+// slide 3: gamble vs certainty — real per-seed spaghetti (rolled back)
+function drawSpread(){
+  const tr=[]; const N=DATA.newton.traces;
+  N.priors.forEach(s=>tr.push({x:s.map(p=>p[0]),y:s.map(p=>clamp(p[1])),mode:'lines+markers',
+    line:{color:C.teal,width:2},marker:{size:5,color:C.teal},opacity:.9,hoverinfo:'skip'}));
+  N.anon.forEach(s=>tr.push({x:s.map(p=>p[0]),y:s.map(p=>clamp(p[1])),mode:'lines+markers',
+    line:{color:C.amber,width:2},marker:{size:5,color:C.amber},opacity:.92,hoverinfo:'skip'}));
+  tr.push({x:[1,800],y:[ETARGET,ETARGET],mode:'lines',line:{color:C.accent,width:1.4,dash:'dot'},hoverinfo:'skip'});
+  tr.push({x:[820],y:[ETARGET],mode:'text',text:['E* = 1e-4'],textposition:'middle left',textfont:{color:C.accent,size:11},hoverinfo:'skip'});
+  const s=DATA.newton.seed;
+  [['1.7×',s[0].B_anon],['49×',s[1].B_anon],['100×',s[2].B_anon]].forEach(([lbl,b])=>
+    tr.push({x:[b],y:[ETARGET*4],mode:'text',text:[lbl],textfont:{color:C.amber,size:13},hoverinfo:'skip'}));
+  tr.push({x:[5.3],y:[ETARGET*4],mode:'text',text:['priors'],textfont:{color:C.teal,size:13},hoverinfo:'skip'});
+  Plotly.react('spread',tr,lay('PROGRAMS EVALUATED  (COMPUTE →)','TEST ERROR  (NMSE)',
+    {x:{range:[0,3]},y:{range:[Math.log10(FLOOR),Math.log10(0.8)]}}),CFG);
+}
+
+// slide 5: asymptote
+function drawAsym(){
+  const {bp,ba}=cross('newton'); const R=Math.pow(10,+document.getElementById('sR').value);
+  document.getElementById('vR').textContent = R>=1000?(R/1000).toFixed(1)+'k':R.toFixed(1);
+  const lv=+document.getElementById('sR').value;
+  document.getElementById('rTag').textContent = lv<2?'today':lv<4.5?'scaling':'near-∞ · Etched';
+  const Rs=[]; for(let i=0;i<=60;i++) Rs.push(Math.pow(10,7*i/60));
+  const t=[
+    {x:Rs,y:Rs.map(r=>ba/r),mode:'lines',line:{color:C.amber,width:3},hoverinfo:'skip'},
+    {x:Rs,y:Rs.map(r=>bp/r),mode:'lines',line:{color:C.teal,width:3},hoverinfo:'skip'},
+    {x:[R,R],y:[bp/1e7,ba],mode:'lines',line:{color:C.accent,width:1.5,dash:'dot'},hoverinfo:'skip'}
+  ];
+  Plotly.react('asym',t,lay('THROUGHPUT  R  (PROGRAMS/SEC →)','WALL-CLOCK TO DISCOVERY (s)'),CFG);
+  const sec=x=>!isFinite(x)?'∞':x>=3600?(x/3600).toFixed(1)+' h':x>=60?(x/60).toFixed(1)+' min':x>=1?x.toFixed(1)+' s':x>=1e-3?(x*1e3).toFixed(0)+' ms':(x*1e6).toFixed(0)+' µs';
+  document.getElementById('aTp').textContent=sec(bp/R);
+  document.getElementById('aTa').textContent=sec(ba/R);
+  document.getElementById('aDt').textContent=sec((ba-bp)/R);
+}
+
+// navigation
+const slides=[...document.querySelectorAll('.slide')];
+const rendered={};
+let si=0, pi=0;
+const stepsOf=s=>[...s.querySelectorAll('.step')];
+function renderChart(i){
+  const ch=slides[i].dataset.chart; if(!ch) return;
+  if(rendered[ch]){ setTimeout(()=>{ if(ch==='gap'){Plotly.Plots.resize('gapKepler');Plotly.Plots.resize('gapNewton');}
+    if(ch==='spread')Plotly.Plots.resize('spread'); if(ch==='asym')Plotly.Plots.resize('asym'); },60); return; }
+  rendered[ch]=true;
+  if(ch==='gap'){ drawGap('gapKepler','kepler'); drawGap('gapNewton','newton'); }
+  if(ch==='spread'){ drawSpread(); }
+  if(ch==='asym'){ drawAsym(); }
+}
+function show(i,fromStart){
+  si=Math.max(0,Math.min(slides.length-1,i));
+  slides.forEach((s,k)=>s.classList.toggle('active',k===si));
+  const st=stepsOf(slides[si]);
+  pi=fromStart?0:Math.max(0,st.length-1);
+  st.forEach((e,k)=>e.classList.toggle('on',k<=pi));
+  renderChart(si); chrome();
+}
+function next(){ const st=stepsOf(slides[si]);
+  if(pi<st.length-1){ pi++; st[pi].classList.add('on'); }
+  else if(si<slides.length-1){ show(si+1,true); } }
+function prev(){ const st=stepsOf(slides[si]);
+  if(pi>0){ st[pi].classList.remove('on'); pi--; }
+  else if(si>0){ show(si-1,false); } }
+function chrome(){
+  document.getElementById('cNow').textContent=String(si+1).padStart(2,'0');
+  document.getElementById('cTot').textContent=String(slides.length).padStart(2,'0');
+  document.getElementById('prog').style.width=((si)/(slides.length-1)*100)+'%';
+  document.getElementById('hint').style.opacity=si===0?1:0;
+}
+const app=document.getElementById('appendix'), closeBtn=document.getElementById('closeApp');
+function toggleApp(open){ app.classList.toggle('open',open); closeBtn.style.display=open?'block':'none';
+  if(open && window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([app]); }
+document.getElementById('sR').addEventListener('input',drawAsym);
+document.getElementById('sR').addEventListener('keydown',e=>e.stopPropagation());
+closeBtn.addEventListener('click',()=>toggleApp(false));
+document.addEventListener('keydown',e=>{
+  if(e.key==='a'||e.key==='A'){ toggleApp(!app.classList.contains('open')); return; }
+  if(e.key==='Escape'){ toggleApp(false); return; }
+  if(app.classList.contains('open')) return;
+  if(e.key===' '||e.key==='ArrowRight'||e.key==='Enter'||e.key==='PageDown'){ e.preventDefault(); next(); }
+  else if(e.key==='ArrowLeft'||e.key==='Backspace'||e.key==='PageUp'){ e.preventDefault(); prev(); }
+});
+document.getElementById('deck').addEventListener('click',e=>{ if(e.target.closest('input,button,a')) return; next(); });
+window.addEventListener('resize',()=>{ ['gapKepler','gapNewton','spread','asym'].forEach(d=>{ try{Plotly.Plots.resize(d);}catch(_){} }); });
+show(0,true);
+</script>
+</body>
+</html>
