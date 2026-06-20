@@ -31,6 +31,9 @@ EXEMPLAR_K = 4              # 3-5: sample this many seeds per round
 TEMP_HI, TEMP_LO = 0.8, 0.4
 BACKOFF_S = 2.0            # brief 429 back-off
 MAX_NO_PROGRESS = 8        # consecutive dead rounds (LLM down / 0 candidates) -> stop
+OCCAM_PATIENCE_ROUNDS = 8  # after first sub-EPS crossing, keep searching up to this many more
+                           # rounds so lexicographic selection can find a SHORTER exact form...
+OCCAM_STALL_ROUNDS = 3     # ...or stop early once the shortest sub-EPS form hasn't shrunk in this many rounds
 REQUEST_TIMEOUT_S = 60.0   # HARD per-request timeout: a silent stall (server never
                            # responds) becomes a failed round, never a 0%-CPU freeze.
 PROGRESS_LOG = Path("runlogs/progress.log")  # local cost/health meter — Prime's dashboard is dark
@@ -95,13 +98,27 @@ class ProgramDB:
         return len(self._by_key)
 
     def best(self) -> tuple[str, ScoreResult] | None:
+        """Lexicographically-best program — the one we REVEAL as best_code. Mirrors
+        evaluator.combine_score: once below EPS the SHORTEST form wins (Occam),
+        not merely the lowest test_error; supra-EPS programs are ranked by
+        test_error and always lose to any sub-EPS one. Higher ScoreResult.score is
+        better (score encodes the tiers + length), with lower test_error as the
+        intra-tier tiebreak."""
         if not self._by_key:
             return None
-        return min(self._by_key.values(), key=lambda cr: cr[1].test_error)
+        return max(self._by_key.values(), key=lambda cr: (cr[1].score, -cr[1].test_error))
+
+    def min_test_error(self) -> float:
+        """Lowest test_error in the pool — the raw DISCOVERY error for the
+        error_trace / EPS-crossing check. DECOUPLED from best(): after crossing
+        EPS, best() optimizes for shortness while this keeps tracking the curve."""
+        if not self._by_key:
+            return float("inf")
+        return min(cr[1].test_error for cr in self._by_key.values())
 
     def best_test_error(self) -> float:
-        b = self.best()
-        return b[1].test_error if b else float("inf")
+        """Alias for min_test_error() — the discovery-curve value (NOT best().test_error)."""
+        return self.min_test_error()
 
     def sample_exemplars(self, k: int, rng: np.random.Generator) -> list[str]:
         """Weighted sampling that FAVORS high score but RETAINS tail exploration
@@ -236,11 +253,17 @@ def run_search(dataset: Dataset, budget: int, seed: int, batch_size: int = BATCH
     client = _make_client()
     no_progress = 0
     round_idx = 0
+    # Occam-patience convergence state (do NOT stop at first sub-EPS hit):
+    crossed = False            # have we crossed EPS yet?
+    rounds_since_cross = 0     # rounds elapsed since the first crossing
+    occam_stall = 0           # rounds since the shortest sub-EPS form last shrank
+    best_sub_len = None        # AST length of the current shortest sub-EPS form
 
     _log_progress(f"{_now()} START law={dataset.law_name} condition={dataset.condition} "
                   f"budget={budget} seed={seed} batch_size={batch_size}")
 
-    while rec.total_evaluated < budget and rec.best_test_error >= EPS:
+    # Budget caps everything; early-stop is handled by the Occam-patience block below.
+    while rec.total_evaluated < budget:
         round_idx += 1
         frac = rec.total_evaluated / budget if budget else 1.0
         temperature = temperature_schedule(frac)
@@ -282,6 +305,32 @@ def run_search(dataset: Dataset, budget: int, seed: int, batch_size: int = BATCH
                       f"best_err={rec.best_test_error:.3e} pool={len(db)} temp={temperature:.3f} "
                       f"ctok={rec.total_completion_tokens} ptok={rec.total_prompt_tokens} "
                       f"best_code='{snippet}'")
+
+        # --- Occam-patience convergence ---------------------------------------
+        # Don't freeze on the first (often bloated) sub-EPS program. Once below
+        # EPS, keep searching so lexicographic db.best() can find a SHORTER exact
+        # form; stop after a patience window OR once shortness stops improving.
+        if db.min_test_error() < EPS:
+            shortest_len = best[1].length if best else None
+            if not crossed:
+                crossed = True
+                rounds_since_cross = 0
+                occam_stall = 0
+                best_sub_len = shortest_len
+                _log_progress(f"{_now()} round={round_idx} EPS_CROSSED best_len={best_sub_len} "
+                              f"-> Occam refinement (patience={OCCAM_PATIENCE_ROUNDS}, stall={OCCAM_STALL_ROUNDS})")
+            else:
+                rounds_since_cross += 1
+                if best_sub_len is None or shortest_len < best_sub_len:
+                    best_sub_len = shortest_len
+                    occam_stall = 0
+                else:
+                    occam_stall += 1
+                if rounds_since_cross >= OCCAM_PATIENCE_ROUNDS or occam_stall >= OCCAM_STALL_ROUNDS:
+                    reason = "patience" if rounds_since_cross >= OCCAM_PATIENCE_ROUNDS else "stall"
+                    _log_progress(f"{_now()} round={round_idx} OCCAM_STOP reason={reason} "
+                                  f"shortest_len={best_sub_len}")
+                    break
 
     best = db.best()
     _log_progress(f"{_now()} DONE law={dataset.law_name} condition={dataset.condition} "

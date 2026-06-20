@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 
 from core.contracts import ScoreResult
+from core.evaluator import combine_score
 from core.search import (
     ProgramDB,
     TraceRecorder,
@@ -103,8 +104,30 @@ def test_best_returns_lowest_test_error():
     db.insert(LINEAR, _res(0.5, score=2.0))
     db.insert(AFFINE, _res(0.05, score=9.0))   # lowest test_error
     db.insert(RATIO, _res(0.2, score=6.0))
-    assert db.best()[0] == AFFINE
+    assert db.best()[0] == AFFINE              # supra-EPS: ranked by test_error
     assert db.best_test_error() == pytest.approx(0.05)
+
+
+def test_best_is_lexicographically_shortest_among_sub_eps():
+    # Once below EPS, Occam takes over: the SHORTEST form is "best", even if a
+    # longer form has a (marginally) lower test_error. This is the bloated-Newton
+    # -superset fix — db.best() must use combine_score's ordering, not raw min err.
+    db = ProgramDB()
+    short_err, short_len = 1e-10, 5
+    long_err, long_len = 1e-12, 30             # LONGER program has LOWER test_error
+    db.insert(LINEAR, ScoreResult(valid=True, train_error=short_err, test_error=short_err,
+                                  length=short_len, fitted_params=(1.0,),
+                                  score=combine_score(short_err, short_len), note="ok"))
+    db.insert(AFFINE, ScoreResult(valid=True, train_error=long_err, test_error=long_err,
+                                  length=long_len, fitted_params=(1.0, 1.0),
+                                  score=combine_score(long_err, long_len), note="ok"))
+    assert len(db) == 2
+    # shortest sub-EPS wins despite NOT having the lowest test_error
+    assert db.best()[0] == LINEAR
+    assert db.best()[1].length == short_len
+    # ...but the discovery curve still tracks the true minimum, decoupled from best()
+    assert db.min_test_error() == pytest.approx(long_err)
+    assert db.best_test_error() == pytest.approx(long_err)
 
 
 # --- trace bookkeeping monotonicity ------------------------------------------
