@@ -1,0 +1,6 @@
+numpy
+scipy
+sympy
+openai
+python-dotenv
+pytest
