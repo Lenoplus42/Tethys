@@ -207,9 +207,118 @@ ul.clean{margin:.4em 0;padding-left:1.2em} ul.clean li{margin:.4em 0;color:#d2d2
       symbolic reveal folds it back to the same <b>m₁m₂/r²</b>. Same truth, ~20× the compute to reach it.</div>
   </section>
 
-  <!-- 5 · WHEN COMPUTE IS FREE -->
+  <!-- 5 · THE ENGINE (animated architecture) -->
+  <style>
+    #engsvg{width:100%;height:auto;max-height:60vh;display:block}
+    #engsvg .step{transform:none}                /* svg groups: fade only, no rise */
+    .eng-teal-fill{fill:rgba(45,212,191,.09);stroke:var(--teal);stroke-width:1.7}
+    .eng-mut-fill{fill:var(--bg2);stroke:#2c2d39;stroke-width:1.4}
+    .eng-mono{font-family:var(--mono)}
+    .t-teal{fill:var(--teal)} .t-mut{fill:var(--muted)} .t-ink{fill:var(--ink)}
+    .t-amber{fill:var(--amber)} .t-faint{fill:var(--faint)}
+    .eng-arrow{stroke:var(--faint);stroke-width:1.6;fill:none}
+    .eng-feed{stroke:var(--muted);stroke-width:1.5;fill:none;stroke-dasharray:5 4}
+    .eng-ring{fill:none;stroke:var(--ink);stroke-width:2.2;opacity:.9}
+    .eng-ring-t{fill:none;stroke:var(--teal);stroke-width:2;opacity:.85}
+    .eng-enter{stroke:var(--teal);stroke-width:1.5;stroke-dasharray:4 4;opacity:.85}
+    .eng-pill{fill:rgba(45,212,191,.10);stroke:var(--teal);stroke-width:1}
+    .eng-pill2{fill:var(--bg2);stroke:var(--line);stroke-width:1}
+  </style>
+  <section class="slide">
+    <div class="slabel"><span class="chip"><span class="id">05</span> THE ENGINE <span class="sector"></span></span></div>
+    <h2 class="head step">Not a prompt wrapper — <span style="color:var(--teal)">six modules, built test-gated.</span></h2>
+    <div style="margin-top:10px">
+    <svg id="engsvg" viewBox="0 0 1200 412" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="ah" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" class="t-faint"/></marker>
+        <marker id="ahm" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" class="t-mut"/></marker>
+      </defs>
+
+      <!-- STEP 1 · the pipeline appears + "6 modules · test-gated" tag + color-key + feedback loop -->
+      <g class="step">
+        <!-- marker 1: whole-pipeline proof -->
+        <rect class="eng-pill" x="34" y="14" width="252" height="26" rx="13"/>
+        <text class="eng-mono t-teal" x="48" y="31" font-size="13" letter-spacing="1.5">6 MODULES · TEST-GATED ✓</text>
+        <!-- color key (this IS the insight) -->
+        <rect x="950" y="13" width="13" height="13" rx="3" class="eng-teal-fill"/>
+        <text class="eng-mono t-mut" x="968" y="24" font-size="11">condition-aware: prior enters</text>
+        <rect x="950" y="31" width="13" height="13" rx="3" class="eng-mut-fill"/>
+        <text class="eng-mono t-mut" x="968" y="42" font-size="11">condition-blind: runs programs</text>
+
+        <!-- feedback loop: search -> proposer (survivors become exemplars) -->
+        <path class="eng-feed" d="M928 150 C 928 96, 436 96, 436 152" marker-end="url(#ahm)"/>
+        <text class="eng-mono t-mut" x="682" y="88" font-size="12" text-anchor="middle">survivors → exemplars · evolutionary loop</text>
+
+        <!-- 7 blocks (laws → datasets → proposer → sandbox → evaluator → search → ablation_experiment) -->
+        <!-- laws -->
+        <rect class="eng-mut-fill" x="34"   y="150" width="148" height="64" rx="10"/>
+        <text class="eng-mono t-mut" x="108"  y="180" font-size="15" text-anchor="middle">laws</text>
+        <text class="eng-mono t-faint" x="108" y="199" font-size="10" text-anchor="middle">ground truth</text>
+        <!-- datasets (teal) -->
+        <rect class="eng-teal-fill" x="198" y="150" width="148" height="64" rx="10"/>
+        <text class="eng-mono t-teal" x="272" y="187" font-size="15" text-anchor="middle">datasets</text>
+        <!-- proposer (teal) -->
+        <rect class="eng-teal-fill" x="362" y="150" width="148" height="64" rx="10"/>
+        <text class="eng-mono t-teal" x="436" y="187" font-size="15" text-anchor="middle">proposer</text>
+        <!-- sandbox (mut) -->
+        <rect class="eng-mut-fill" x="526" y="150" width="148" height="64" rx="10"/>
+        <text class="eng-mono t-ink" x="600" y="187" font-size="15" text-anchor="middle">sandbox</text>
+        <!-- evaluator (mut) -->
+        <rect class="eng-mut-fill" x="690" y="150" width="148" height="64" rx="10"/>
+        <text class="eng-mono t-ink" x="764" y="187" font-size="15" text-anchor="middle">evaluator</text>
+        <!-- search (mut) -->
+        <rect class="eng-mut-fill" x="854" y="150" width="148" height="64" rx="10"/>
+        <text class="eng-mono t-ink" x="928" y="187" font-size="15" text-anchor="middle">search</text>
+        <!-- ablation_experiment (teal) -->
+        <rect class="eng-teal-fill" x="1018" y="150" width="148" height="64" rx="10"/>
+        <text class="eng-mono t-teal" x="1092" y="181" font-size="15" text-anchor="middle">ablation</text>
+        <text class="eng-mono t-teal" x="1092" y="200" font-size="10" text-anchor="middle" opacity=".82">_experiment</text>
+
+        <!-- forward arrows -->
+        <line class="eng-arrow" x1="182" y1="182" x2="198" y2="182" marker-end="url(#ah)"/>
+        <line class="eng-arrow" x1="346" y1="182" x2="362" y2="182" marker-end="url(#ah)"/>
+        <line class="eng-arrow" x1="510" y1="182" x2="526" y2="182" marker-end="url(#ah)"/>
+        <line class="eng-arrow" x1="674" y1="182" x2="690" y2="182" marker-end="url(#ah)"/>
+        <line class="eng-arrow" x1="838" y1="182" x2="854" y2="182" marker-end="url(#ah)"/>
+        <line class="eng-arrow" x1="1002" y1="182" x2="1018" y2="182" marker-end="url(#ah)"/>
+      </g>
+
+      <!-- STEP 2 · sandbox highlights + the runaway/timeout proof -->
+      <g class="step">
+        <rect class="eng-ring" x="518" y="142" width="164" height="80" rx="13"/>
+        <line class="eng-arrow" x1="600" y1="222" x2="600" y2="250" marker-end="url(#ah)"/>
+        <text class="eng-mono t-ink" x="600" y="268" font-size="13" text-anchor="middle">process-isolated · hard 0.5s timeout · kills runaways</text>
+        <text class="eng-mono t-mut" x="600" y="285" font-size="11" text-anchor="middle">spawn ProcessPoolExecutor — a thread can't kill a GIL-bound loop · 60s request cap → never freezes overnight</text>
+      </g>
+
+      <!-- STEP 3 · the condition entry: bit-identical data, only names differ -->
+      <g class="step">
+        <line class="eng-enter" x1="354" y1="138" x2="354" y2="226"/>
+        <text class="eng-mono t-teal" x="354" y="132" font-size="11" text-anchor="middle">↓ condition enters here</text>
+        <text class="eng-mono t-teal" x="436" y="318" font-size="13" text-anchor="middle">bit-identical data · only names differ · test-proven</text>
+        <!-- the single point from which priors/anon diverge -->
+        <circle cx="338" cy="338" r="5" class="t-teal"/>
+        <text class="eng-mono t-teal" x="352" y="342" font-size="12" text-anchor="start">priors · names ON</text>
+        <circle cx="560" cy="338" r="5" class="t-amber"/>
+        <text class="eng-mono t-amber" x="574" y="342" font-size="12" text-anchor="start">anon · names OFF</text>
+        <text class="eng-mono t-mut" x="730" y="342" font-size="11" text-anchor="start">— same numbers, identical pipeline</text>
+      </g>
+
+      <!-- STEP 4 · the divergence lights up + closing tag -->
+      <g class="step">
+        <rect class="eng-ring-t" x="194" y="146" width="156" height="72" rx="12"/>
+        <rect class="eng-ring-t" x="358" y="146" width="156" height="72" rx="12"/>
+        <rect class="eng-ring-t" x="1014" y="146" width="156" height="72" rx="12"/>
+        <rect class="eng-pill2" x="372" y="364" width="456" height="36" rx="18"/>
+        <text class="eng-mono" x="600" y="388" font-size="17" text-anchor="middle"><tspan class="t-teal" font-weight="700">20×</tspan><tspan class="t-ink"> — the prior, and nothing else.</tspan></text>
+      </g>
+    </svg>
+    </div>
+  </section>
+
+  <!-- 6 · WHEN COMPUTE IS FREE -->
   <section class="slide" data-chart="asym">
-    <div class="slabel"><span class="chip"><span class="id">05</span> WHEN COMPUTE IS FREE <span class="sector"></span></span></div>
+    <div class="slabel"><span class="chip"><span class="id">06</span> WHEN COMPUTE IS FREE <span class="sector"></span></span></div>
     <h2 class="head step">The price is paid in compute.<br/>Make compute free, and its <span style="color:var(--teal)">felt cost goes to zero.</span></h2>
     <div class="cols" style="margin-top:8px">
       <div class="step"><div class="caprow"><span class="cap">Newton · wall-clock to discovery vs throughput</span>
