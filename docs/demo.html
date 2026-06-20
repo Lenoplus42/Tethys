@@ -31,6 +31,17 @@ body{background-image:radial-gradient(circle at 1px 1px, rgba(255,255,255,0.022)
 .counter b{color:var(--teal);font-size:16px}
 .progress{position:absolute;top:0;left:0;height:2px;background:var(--teal);transition:width .4s ease;box-shadow:0 0 12px var(--teal)}
 .hint{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;color:var(--faint);text-transform:uppercase}
+/* clickable jump-nav — sits ~30px down so the hit zone never reaches the screen top (keeps fullscreen chrome hidden) */
+.nav{position:fixed;top:20px;left:50%;transform:translateX(-50%);width:44vw;max-width:720px;z-index:45;display:flex;gap:6px;align-items:center;opacity:.4;transition:opacity .2s}
+.nav:hover{opacity:1}
+.nav .seg{position:relative;flex:1;cursor:pointer;padding:10px 0}
+.nav .seg::before{content:"";display:block;height:4px;border-radius:2px;background:var(--line);transition:background .2s,box-shadow .2s}
+.nav .seg.done::before{background:#356b61}
+.nav .seg.cur::before{background:var(--teal);box-shadow:0 0 10px var(--teal)}
+.nav .seg:hover::before{background:var(--accent)}
+.appendix ol.refs{margin:10px 0;padding-left:20px;max-width:940px}
+.appendix ol.refs li{color:#d2d2dc;line-height:1.5;margin:8px 0;font-size:14px}
+.appendix ol.refs li b{color:var(--accent)}
 .chip{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--teal)}
 .chip .id{background:var(--teal);color:#04110f;font-weight:800;padding:2px 7px;border-radius:3px;letter-spacing:.05em}
 .sector{display:inline-block;width:30px;height:4px;position:relative;vertical-align:middle}
@@ -139,8 +150,9 @@ ul.clean{margin:.4em 0;padding-left:1.2em} ul.clean li{margin:.4em 0;color:#d2d2
   <div class="tick tl"></div><div class="tick tr"></div><div class="tick bl"></div><div class="tick br"></div>
   <div class="wordmark">TETHYS <b>// THE PRICE OF DISCOVERY</b></div>
   <div class="counter"><b id="cNow">00</b> / <span id="cTot">00</span></div>
-  <div class="hint" id="hint">SPACE / CLICK → ADVANCE &nbsp;·&nbsp; A → MATH APPENDIX</div>
+  <div class="hint" id="hint">F → FULLSCREEN &nbsp;·&nbsp; SPACE / CLICK → ADVANCE &nbsp;·&nbsp; A → MATH APPENDIX</div>
 </div>
+<div class="nav" id="nav"></div>
 
 <div class="deck" id="deck">
 
@@ -152,9 +164,6 @@ ul.clean{margin:.4em 0;padding-left:1.2em} ul.clean li{margin:.4em 0;color:#d2d2
       compute</b> and <b style="color:var(--ink)">discovery</b>. One equation-discovery engine, run with an AI's prior
       switched on, then off, on identical data — and the difference priced in compute.</p>
     <p class="sub step" style="color:var(--teal)">This run: Kepler ≈ 1× (control) · Rocket ≈ 12× · Newton ≈ 20× · and the engine rediscovers Tsiolkovsky's Δv = v_e·ln(m₀/m₁) blind.</p>
-    <p class="step" style="font-family:var(--mono);font-size:12px;color:var(--faint);letter-spacing:.03em;margin-top:20px;max-width:880px">
-      Engine: FunSearch (DeepMind, 2023) · LLM-SR (ICLR 2025) — proven equation discovery. Our lens: make the model's
-      prior a knob, and price it in compute.</p>
   </section>
 
   <!-- 1 · THE QUESTION -->
@@ -524,8 +533,18 @@ ul.clean{margin:.4em 0;padding-left:1.2em} ul.clean li{margin:.4em 0;color:#d2d2
     <li><b>What is invariant</b> is the limit $\Delta t=(B_{\text{anon}}-B_{\text{priors}})/R\to 0$ — true for any price.</li>
     <li><b>Offline-reproducible</b> from timestamped RunLog JSON; the demo replays saved data, zero live-LLM dependency.</li>
   </ul>
-  <p class="note">Provenance: Qwen3-235B-A22B-Instruct via Prime Intellect · E_TARGET = 1e-4 · 3 seeds/condition ·
-  &lt; $0.50 total. Lineage: FunSearch (2023) · LLM-SR (ICLR 2025) · In-Context SR (2024) · Solomonoff (1964) · Levin (1973).</p>
+  <p class="note">Provenance: Qwen3-235B-A22B-Instruct via Prime Intellect · E_TARGET = 1e-4 · 3 seeds/condition · &lt; $0.50 total.</p>
+
+  <h2>References</h2>
+  <ol class="refs">
+    <li><b>FunSearch</b> — Romera-Paredes, B. et&nbsp;al. (2023). <i>Mathematical discoveries from program search with large language models.</i> Nature. — the LLM + evolutionary program-search paradigm.</li>
+    <li><b>LLM-SR</b> — Shojaee, P. et&nbsp;al. (2025). <i>LLM-SR: Scientific Equation Discovery via Programming with Large Language Models.</i> ICLR&nbsp;2025. — our core engine paradigm.</li>
+    <li><b>In-Context Symbolic Regression</b> — Merler, M. et&nbsp;al. (2024). <i>Leveraging large language models for function discovery.</i> — LLM proposes the form, an external optimizer fits the constants (our <code>curve_fit</code> step).</li>
+    <li><b>Rediscovering orbital mechanics with machine learning</b> — Lemos, P., Jeffrey, N., Cranmer, M. et&nbsp;al. (2022). — rediscovering physical law is prior art; ours is the <i>instrument</i>, not the result.</li>
+    <li><b>Solomonoff, R.&nbsp;J.</b> (1964). <i>A formal theory of inductive inference (I &amp; II).</i> Information and Control. — the universal prior / optimal predictor.</li>
+    <li><b>Levin, L.&nbsp;A.</b> (1973). <i>Universal sequential search problems.</i> Problems of Information Transmission. — the computable, time-bounded form ($Kt$).</li>
+    <li><b>Kolmogorov, A.&nbsp;N.</b> (1965). <i>Three approaches to the quantitative definition of information.</i> — description length / $K(x)$.</li>
+  </ol>
 </div>
 
 <script>
@@ -664,7 +683,15 @@ function chrome(){
   document.getElementById('cTot').textContent=String(slides.length).padStart(2,'0');
   document.getElementById('prog').style.width=((si)/(slides.length-1)*100)+'%';
   document.getElementById('hint').style.opacity=si===0?1:0;
+  const nv=document.getElementById('nav');
+  if(nv) [...nv.children].forEach((seg,i)=>{ seg.classList.toggle('cur',i===si); seg.classList.toggle('done',i<si); });
 }
+function buildNav(){
+  const nv=document.getElementById('nav');
+  slides.forEach((s,i)=>{ const seg=document.createElement('div'); seg.className='seg'; seg.title='Page '+(i+1);
+    seg.addEventListener('click',ev=>{ ev.stopPropagation(); jumpTo(i); }); nv.appendChild(seg); });
+}
+function jumpTo(i){ if(transitioning||i===si) return; show(i,true); }   // instant jump, no launch animation
 const app=document.getElementById('appendix'), closeBtn=document.getElementById('closeApp');
 function toggleApp(open){ app.classList.toggle('open',open); closeBtn.style.display=open?'block':'none';
   document.getElementById('wipe').style.display = open?'none':'';   // keep the parked rocket out of the appendix
@@ -672,7 +699,13 @@ function toggleApp(open){ app.classList.toggle('open',open); closeBtn.style.disp
 document.getElementById('sR').addEventListener('input',drawAsym);
 document.getElementById('sR').addEventListener('keydown',e=>e.stopPropagation());
 closeBtn.addEventListener('click',()=>toggleApp(false));
+function toggleFullscreen(){
+  const el=document.documentElement;
+  if(!document.fullscreenElement){ (el.requestFullscreen||el.webkitRequestFullscreen||el.msRequestFullscreen).call(el); }
+  else { (document.exitFullscreen||document.webkitExitFullscreen||document.msExitFullscreen).call(document); }
+}
 document.addEventListener('keydown',e=>{
+  if(e.key==='f'||e.key==='F'){ toggleFullscreen(); return; }   // true page fullscreen — best for recording
   if(e.key==='a'||e.key==='A'){ toggleApp(!app.classList.contains('open')); return; }
   if(e.key==='Escape'){ toggleApp(false); return; }
   if(app.classList.contains('open')) return;
@@ -681,7 +714,7 @@ document.addEventListener('keydown',e=>{
 });
 document.getElementById('deck').addEventListener('click',e=>{ if(e.target.closest('input,button,a')) return; next(); });
 window.addEventListener('resize',()=>{ ['gapKepler','gapRocket','gapNewton','spread','asym'].forEach(d=>{ try{Plotly.Plots.resize(d);}catch(_){} }); });
-show(0,true);
+buildNav(); show(0,true);
 </script>
 </body>
 </html>
