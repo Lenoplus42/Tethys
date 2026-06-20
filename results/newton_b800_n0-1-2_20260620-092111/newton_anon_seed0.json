@@ -1,0 +1,54 @@
+{
+  "law_name": "newton",
+  "condition": "anon",
+  "budget": 800,
+  "seed": 0,
+  "best_test_error": 3.5334066929080885e-19,
+  "error_trace": [
+    [
+      10,
+      6.455998097774866e-18
+    ],
+    [
+      14,
+      4.988936262727182e-18
+    ],
+    [
+      19,
+      3.5334066929080885e-19
+    ],
+    [
+      24,
+      3.5334066929080885e-19
+    ]
+  ],
+  "best_code": "N_PARAMS = 5\ndef evaluate_law(inputs, params):\n    x = inputs[0]\n    y = inputs[1]\n    z = inputs[2]\n    return (params[0] + params[1] * x) * (params[2] + params[3] * y) * z**params[4]",
+  "total_prompt_tokens": 3319,
+  "total_completion_tokens": 1971,
+  "token_trace": [
+    [
+      10,
+      754
+    ],
+    [
+      14,
+      1085
+    ],
+    [
+      19,
+      1543
+    ],
+    [
+      24,
+      1971
+    ]
+  ],
+  "fitted_params": [
+    4.0351167269089515e-09,
+    1.0826152655575185,
+    4.197873063831426e-08,
+    0.9236891683679522,
+    -2.0000000040848582
+  ],
+  "true_law_str": "Y = G * A * B / C**2  (G=1.0)"
+}

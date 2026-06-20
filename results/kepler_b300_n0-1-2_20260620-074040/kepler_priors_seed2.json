@@ -1,0 +1,51 @@
+{
+  "law_name": "kepler",
+  "condition": "priors",
+  "budget": 300,
+  "seed": 2,
+  "best_test_error": 0.0,
+  "error_trace": [
+    [
+      6,
+      0.0
+    ],
+    [
+      11,
+      0.0
+    ],
+    [
+      16,
+      0.0
+    ],
+    [
+      21,
+      0.0
+    ]
+  ],
+  "best_code": "N_PARAMS = 2\ndef evaluate_law(inputs, params):\n    orbital_radius = inputs[0]\n    return params[0] * (orbital_radius ** params[1])",
+  "total_prompt_tokens": 2692,
+  "total_completion_tokens": 1112,
+  "token_trace": [
+    [
+      6,
+      318
+    ],
+    [
+      11,
+      580
+    ],
+    [
+      16,
+      835
+    ],
+    [
+      21,
+      1112
+    ]
+  ],
+  "fitted_params": [
+    1.0,
+    1.5
+  ],
+  "true_law_str": "Y = 1.0 * X**1.5"
+}

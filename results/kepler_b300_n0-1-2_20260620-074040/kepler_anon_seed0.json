@@ -1,0 +1,51 @@
+{
+  "law_name": "kepler",
+  "condition": "anon",
+  "budget": 300,
+  "seed": 0,
+  "best_test_error": 0.0,
+  "error_trace": [
+    [
+      8,
+      0.0
+    ],
+    [
+      13,
+      0.0
+    ],
+    [
+      18,
+      0.0
+    ],
+    [
+      23,
+      0.0
+    ]
+  ],
+  "best_code": "N_PARAMS = 2\ndef evaluate_law(inputs, params):\n    x = inputs[0]\n    return params[0] * x**params[1]",
+  "total_prompt_tokens": 2597,
+  "total_completion_tokens": 1138,
+  "token_trace": [
+    [
+      8,
+      365
+    ],
+    [
+      13,
+      613
+    ],
+    [
+      18,
+      879
+    ],
+    [
+      23,
+      1138
+    ]
+  ],
+  "fitted_params": [
+    1.0,
+    1.5
+  ],
+  "true_law_str": "Y = 1.0 * X**1.5"
+}

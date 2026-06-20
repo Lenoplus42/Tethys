@@ -1,0 +1,58 @@
+{
+  "law": "kepler",
+  "true_law_str": "Y = 1.0 * X**1.5",
+  "budget": 300,
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "e_target": 0.0001,
+  "timestamp": "20260620-092340",
+  "convergence": {
+    "anon": "3/3",
+    "priors": "3/3"
+  },
+  "prior_price": {
+    "mean": 1.0501265906023767,
+    "geomean": 1.047804868871497,
+    "std": 0.07088970426540503,
+    "min": 1.0,
+    "max": 1.1503797718071305,
+    "n": 3
+  },
+  "prior_price_tokens": {
+    "mean": 0.9486667590602792,
+    "geomean": 0.9417216042793669,
+    "std": 0.11781496347874996,
+    "min": 0.8568075117370892,
+    "max": 1.114978928965761,
+    "n": 3
+  },
+  "per_seed": {
+    "0": {
+      "B_priors": 8.0,
+      "B_anon": 8.0,
+      "B_priors_tokens": 426.0,
+      "B_anon_tokens": 365.0,
+      "price": 1.0,
+      "price_tokens": 0.8568075117370892
+    },
+    "1": {
+      "B_priors": 6.0,
+      "B_anon": 6.902278630842783,
+      "B_priors_tokens": 288.0,
+      "B_anon_tokens": 321.1139315421392,
+      "price": 1.1503797718071305,
+      "price_tokens": 1.114978928965761
+    },
+    "2": {
+      "B_priors": 6.0,
+      "B_anon": 6.0,
+      "B_priors_tokens": 318.0,
+      "B_anon_tokens": 278.0,
+      "price": 1.0,
+      "price_tokens": 0.8742138364779874
+    }
+  }
+}

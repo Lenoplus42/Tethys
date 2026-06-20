@@ -1,0 +1,52 @@
+{
+  "law_name": "newton",
+  "condition": "priors",
+  "budget": 800,
+  "seed": 1,
+  "best_test_error": 0.0,
+  "error_trace": [
+    [
+      5,
+      0.0
+    ],
+    [
+      10,
+      0.0
+    ],
+    [
+      15,
+      0.0
+    ],
+    [
+      20,
+      0.0
+    ]
+  ],
+  "best_code": "N_PARAMS = 3\ndef evaluate_law(inputs, params):\n    m1 = inputs[0]\n    m2 = inputs[1]\n    r = inputs[2]\n    return params[0] * m1 * m2 / (r**params[1])**params[2]",
+  "total_prompt_tokens": 3314,
+  "total_completion_tokens": 1440,
+  "token_trace": [
+    [
+      5,
+      361
+    ],
+    [
+      10,
+      728
+    ],
+    [
+      15,
+      1087
+    ],
+    [
+      20,
+      1440
+    ]
+  ],
+  "fitted_params": [
+    1.0,
+    1.0752817553153018,
+    1.859977619924878
+  ],
+  "true_law_str": "Y = G * A * B / C**2  (G=1.0)"
+}
