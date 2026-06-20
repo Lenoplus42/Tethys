@@ -9,8 +9,8 @@ knowledge alone.
 
 import numpy as np
 
-from contracts import Condition, Dataset, LawSpec
-from laws import TIER0
+from core.contracts import Condition, Dataset, LawSpec
+from core.laws import TIER0
 
 # Inputs are sampled uniformly in [1, 10] (Newton requirement in §3; also keeps
 # all laws' outputs O(1)-O(100) for curve_fit stability and avoids x<=0).

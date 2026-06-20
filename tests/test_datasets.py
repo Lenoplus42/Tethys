@@ -5,8 +5,8 @@
 - true_law_fn reproduces clean test outputs to machine precision.
 """
 
-from datasets import make_dataset, make_tier0
-from laws import KEPLER, NEWTON
+from core.datasets import make_dataset, make_tier0
+from core.laws import KEPLER, NEWTON
 
 
 def test_identical_numbers_different_names():

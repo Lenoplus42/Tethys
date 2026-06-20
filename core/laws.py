@@ -7,7 +7,7 @@ while keeping the numeric data identical. true_law_fn takes a tuple of inputs
 scalar. It is NEVER shown to the LLM.
 """
 
-from contracts import LawSpec
+from core.contracts import LawSpec
 
 # Newton constant, chosen as 1.0 to keep outputs O(1)-O(100) for curve_fit stability
 # (we are not modelling SI units — only numeric structure).

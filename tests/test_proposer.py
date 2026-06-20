@@ -1,8 +1,8 @@
 """Module 3 acceptance test (§4 of SPEC.md) — NO network."""
 
-from datasets import make_dataset
-from laws import KEPLER
-from proposer import SYSTEM_PROMPT, build_prompt, parse_programs
+from core.datasets import make_dataset
+from core.laws import KEPLER
+from core.proposer import SYSTEM_PROMPT, build_prompt, parse_programs
 
 PREVIEW = "1.000, 1.000\n4.000, 8.000\n9.000, 27.000"
 

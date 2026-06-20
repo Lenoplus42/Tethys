@@ -29,7 +29,7 @@ from contextlib import contextmanager
 import numpy as np
 from scipy.optimize import curve_fit
 
-from contracts import Dataset, ScoreResult
+from core.contracts import Dataset, ScoreResult
 
 # Lexicographic generalization threshold. A program with test NMSE below EPS is
 # treated as "has found the law"; further competition is purely on simplicity.

@@ -16,7 +16,7 @@ differ" and is what makes the measured gap attributable to the prior alone.
 import ast
 import re
 
-from contracts import Dataset
+from core.contracts import Dataset
 
 # ---- 1. System prompt (condition-INDEPENDENT; states the fixed §1 contract) ----
 SYSTEM_PROMPT = """You are an equation-discovery engine. You propose candidate \

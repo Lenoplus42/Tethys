@@ -2,9 +2,9 @@
 
 import numpy as np
 
-from contracts import Dataset
-from datasets import make_dataset
-from evaluator import (
+from core.contracts import Dataset
+from core.datasets import make_dataset
+from core.evaluator import (
     EPS,
     combine_score,
     description_length,
@@ -12,7 +12,7 @@ from evaluator import (
     fit_params,
     score_program,
 )
-from laws import KEPLER
+from core.laws import KEPLER
 
 TRUE_KEPLER = "N_PARAMS = 2\ndef evaluate_law(inputs, params):\n    x = inputs[0]\n    return params[0] * x ** params[1]\n"
 
