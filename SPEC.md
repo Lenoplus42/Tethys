@@ -127,6 +127,10 @@ class RunLog:
     best_test_error: float          # at end of budget
     error_trace: list[tuple]        # [(programs_evaluated, best_test_error_so_far), ...]
     best_code: str
+    # token accounting (added during impl; honest inference-compute proxy alongside `budget`):
+    total_prompt_tokens: int = 0
+    total_completion_tokens: int = 0
+    token_trace: list[tuple] = field(default_factory=list)  # (programs_evaluated, cumulative_completion_tokens)
 ```
 
 ---
@@ -148,6 +152,11 @@ budgets, ≥3 seeds each. Overlay the two error-vs-compute curves on one axis wi
 ### 2.2 The gap metric (the quotable number — this is the headline result)
 Define a fixed target test-error `E_TARGET` (e.g. `1e-4`). For each condition, find
 `B_cond` = programs evaluated to first reach `E_TARGET` (interpolate on `error_trace`).
+
+> `test_error` is **normalized MSE** (`mean((pred-true)**2) / var(true)`, see Module 2), so a
+> single `E_TARGET` is comparable across laws of different output scale (Kepler ~O(10) vs
+> Newton ~O(100)). This scale-invariance is what makes the **cross-law** `PRIOR_PRICE` comparison
+> in §2.3 legitimate — raw MSE would not be comparable.
 
 ```
 PRIOR_PRICE = B_anon / B_priors        # "the prior was worth N× inference compute"
@@ -239,13 +248,23 @@ def description_length(code: str) -> int                     # AST node count of
 def combine_score(test_error, length) -> float              # LEXICOGRAPHIC, see below
 def score_program(code: str, dataset) -> ScoreResult        # seam fn the sandbox wraps
 ```
-Decisions: fit constants with `scipy.optimize.curve_fit` (try/except → `valid=False` on failure).
-**Selection is lexicographic, not weighted:** among programs with `test_error < EPS`, rank purely
-by `-length`; above `EPS`, rank by `-test_error`. `description_length` = AST node count (NOT chars
-— whitespace can't be gamed). Headline signal is always `test_error`.
+Decisions: fit constants with `scipy.optimize.curve_fit` on TRAIN only (try/except → return
+`None`/`valid=False` on ANY failure — raise, non-finite params, arity mismatch — never propagate).
+**Errors are normalized MSE (NMSE):** `test_error = mean((pred-true)**2) / var(true)` per split
+(variance floored by a small eps for constant-output splits). NMSE makes `E_TARGET` comparable
+across laws (§2.2) — do NOT use raw MSE. **Selection is lexicographic, not weighted:** among
+programs with `test_error < EPS` (impl: `EPS = 1e-6`, the "law found" threshold — distinct from
+§2.2's `E_TARGET = 1e-4`), rank purely by `-length`; above `EPS`, rank by `-test_error`.
+`combine_score` encodes this single order so every sub-EPS program outranks every supra-EPS one.
+`description_length` = AST node count of the `evaluate_law` body (NOT chars — whitespace can't be
+gamed). `score_program` also wraps a lightweight single-thread SIGALRM timeout so a pathological
+candidate (`while True`) can't hang a pure call; the REAL hard timeout stays in the sandbox
+(Module 4). Headline signal is always `test_error`.
 
 **Acceptance:** hand-written true Kepler → `test_error ≈ machine-eps`, `fitted_params ≈ (c0,1.5)`;
-a 100-line if/else overfit → worse `score` despite low `train_error`.
+a 100-line if/else overfit → worse `score` despite low `train_error`; an infinite-loop/raising
+program → `valid=False`, no hang, no raise; NMSE equal-order across a constant-scale and a
+Newton-scale law for an equally-good fit.
 
 ### Module 3 — `proposer.py` (steering — owns prompt + parser; plumbing owns the async call)
 ```python
@@ -257,10 +276,21 @@ def parse_programs(llm_response: str) -> list[str]
 `dataset.domain_hint` and the semantic names. In `"anon"`, include NEITHER — only `Sensor_*` and
 raw numbers. The prompt builder is the literal mechanism that gives/removes the prior. State the
 fixed contract (`N_PARAMS`, `evaluate_law`). Early rounds push diversity; late rounds refine the
-leader. Parser drops malformed blocks without raising.
+leader. Parser drops malformed blocks without raising (keep a block only if it `ast.parse`s AND
+defines both `evaluate_law` and `N_PARAMS`).
+
+**Auditability (load-bearing, impl decision):** the prompt body template is **byte-identical**
+across conditions; the ONLY textual difference is the interpolated names + the one `Context:`
+hint line (present in `"priors"`, absent in `"anon"`). The "scientific-discovery vs
+fit-a-function" framing is **not written as two prose variants** — it EMERGES from the names +
+hint alone (mirrors datasets.py's "identical numbers, only names differ"). Do NOT add any semantic
+flavor/units/context to the anon prompt; a reviewer must be able to diff the two prompts and see
+ONLY names/hint differ. (Enforced by a test that reconstructs the priors prompt from the anon one
+by swapping names + re-adding the hint line.)
 
 **Acceptance:** same law, two conditions → the `"priors"` prompt contains the domain hint +
-semantic names; the `"anon"` prompt contains neither. ≥20 valid distinct functions per batch on
+semantic names and no `Sensor`; the `"anon"` prompt contains `Sensor_*` and neither the hint nor
+any semantic name; both state the fixed contract. ≥20 valid distinct functions per batch on
 Tier 0.
 
 ### Module 4 — `sandbox.py` (plumbing — infra)
