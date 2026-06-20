@@ -85,9 +85,12 @@ def first_crossing(error_trace, token_trace, e_target):
 
 def _agg(values):
     if not values:
-        return {"mean": None, "std": None, "min": None, "max": None, "n": 0}
+        return {"mean": None, "geomean": None, "std": None, "min": None, "max": None, "n": 0}
     arr = np.asarray(values, dtype=float)
-    return {"mean": float(arr.mean()), "std": float(arr.std(ddof=0)),
+    # geometric mean is the principled aggregate for a RATIO like PRIOR_PRICE: it
+    # isn't dragged up by a single heavy-tailed seed the way the arithmetic mean is.
+    geomean = float(np.exp(np.mean(np.log(arr)))) if np.all(arr > 0) else None
+    return {"mean": float(arr.mean()), "geomean": geomean, "std": float(arr.std(ddof=0)),
             "min": float(arr.min()), "max": float(arr.max()), "n": int(arr.size)}
 
 
@@ -196,8 +199,10 @@ def _draw_ablation_on_ax(ax, logs, e_target, law_name=None, price=None, show_yla
     if show_ylabel:
         ax.set_ylabel("test error (NMSE)  ↓ better")
 
-    pp = (price or {}).get("prior_price", {}).get("mean")
-    ppt = (price or {}).get("prior_price_tokens", {}).get("mean")
+    ppd = (price or {}).get("prior_price", {})
+    pptd = (price or {}).get("prior_price_tokens", {})
+    pp = ppd.get("geomean") or ppd.get("mean")        # geometric mean: honest for a ratio
+    ppt = pptd.get("geomean") or pptd.get("mean")
     title = (law_name or "").strip()
     if pp:
         ann = f"PRIOR_PRICE ≈ {pp:.1f}× (programs)"
@@ -371,13 +376,13 @@ def _print_summary(law, price, png_path):
     print(f"E_TARGET       : {price['e_target']:g}")
     pp, ppt = price["prior_price"], price["prior_price_tokens"]
     if pp["mean"]:
-        print(f"PRIOR_PRICE    : {pp['mean']:.2f}x  (programs)  "
-              f"[n={pp['n']}, spread {pp['min']:.2f}-{pp['max']:.2f}, std {pp['std']:.2f}]")
+        print(f"PRIOR_PRICE    : geomean {pp.get('geomean'):.2f}x  (programs)  "
+              f"[n={pp['n']}, range {pp['min']:.2f}-{pp['max']:.2f}, arith.mean {pp['mean']:.2f}, std {pp['std']:.2f}]")
     else:
         print("PRIOR_PRICE    : (insufficient crossings — anon and/or priors never reached E_TARGET)")
     if ppt["mean"]:
-        print(f"PRIOR_PRICE_tok: {ppt['mean']:.2f}x  (completion tokens)  "
-              f"[n={ppt['n']}, std {ppt['std']:.2f}]")
+        print(f"PRIOR_PRICE_tok: geomean {ppt.get('geomean'):.2f}x  (completion tokens)  "
+              f"[n={ppt['n']}, range {ppt['min']:.2f}-{ppt['max']:.2f}, arith.mean {ppt['mean']:.2f}, std {ppt['std']:.2f}]")
     print("\nper-seed:")
     for s, e in sorted(price["per_seed"].items()):
         print(f"  seed {s}: B_priors={e['B_priors']} B_anon={e['B_anon']} "
