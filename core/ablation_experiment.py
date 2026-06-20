@@ -22,12 +22,12 @@ import numpy as np
 
 from core.contracts import RunLog
 from core.datasets import make_dataset
-from core.laws import KEPLER, NEWTON
+from core.laws import KEPLER, NEWTON, ROCKET
 from core.search import BATCH_SIZE, run_search
 
 E_TARGET = 1e-4          # §2.2 headline target error
 _ERR_FLOOR = 1e-18       # clamp exact-zero errors for log-scale plotting
-_LAW_BY_NAME = {"kepler": KEPLER, "newton": NEWTON}
+_LAW_BY_NAME = {"kepler": KEPLER, "newton": NEWTON, "rocket": ROCKET}
 
 
 # ---------------------------------------------------------------------------

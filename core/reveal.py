@@ -18,6 +18,8 @@ CLI:  python -m core.reveal <path-to-runlog.json>
 
 import json
 import sys
+import types
+from contextlib import contextmanager
 
 import sympy as sp
 
@@ -65,19 +67,93 @@ def _drop_small_additives(expr):
     return expr
 
 
-def simplify_discovered(best_code: str, fitted_params, law):
-    """Pure (no print). Returns (substituted_expr, simplified_expr, true_expr, matches)."""
-    syms = _symbols_tuple(law.n_inputs)
-    ns: dict = {}
-    exec(best_code, ns)
-    evaluate_law = ns["evaluate_law"]
+def _sym_namespace() -> dict:
+    """Exec namespace whose transcendentals are SYMPY-backed, so a candidate using
+    math.log / np.log / a bare log on SYMPY SYMBOL inputs yields a sympy expression
+    (no real import needed — mirrors evaluator's preset, the common no-import case
+    that models actually write). Mathematically nothing changes; this just lets the
+    symbolic reveal run on log/exp/sqrt forms instead of crashing on math.log(symbol)."""
+    class _Shim:  # stands in for the math / numpy modules
+        log = staticmethod(sp.log); ln = staticmethod(sp.log)
+        log10 = staticmethod(lambda z: sp.log(z, 10))
+        exp = staticmethod(sp.exp); sqrt = staticmethod(sp.sqrt)
+        sin = staticmethod(sp.sin); cos = staticmethod(sp.cos); tan = staticmethod(sp.tan)
+        pi = sp.pi; e = sp.E
+    shim = _Shim()
+    return {"math": shim, "np": shim, "numpy": shim,
+            "log": sp.log, "ln": sp.log, "log10": (lambda z: sp.log(z, 10)),
+            "exp": sp.exp, "sqrt": sp.sqrt, "sin": sp.sin, "cos": sp.cos, "tan": sp.tan,
+            "pi": sp.pi, "e": sp.E}
 
+
+@contextmanager
+def _patched_math():
+    """Within this block `import math` yields a sympy-backed module, so a candidate
+    that imports math (which would otherwise rebind to the real module and crash on
+    math.log(symbol)) still produces sympy exprs. math-only (numpy is covered by the
+    preset namespace); restored in finally. Display-only context, parent thread."""
+    real = sys.modules.get("math")
+    shim = types.ModuleType("math")
+    if real is not None:                       # keep floor/isnan/inf/... real so sympy
+        shim.__dict__.update(real.__dict__)    # internals still work; override only the
+    for k, v in {"log": sp.log, "log10": (lambda z: sp.log(z, 10)),   # candidate-facing
+                 "log2": (lambda z: sp.log(z, 2)), "exp": sp.exp, "sqrt": sp.sqrt,
+                 "sin": sp.sin, "cos": sp.cos, "tan": sp.tan}.items():  # transcendentals
+        setattr(shim, k, v)
+    sys.modules["math"] = shim
+    try:
+        yield
+    finally:
+        if real is not None:
+            sys.modules["math"] = real
+        else:
+            sys.modules.pop("math", None)
+
+
+def simplify_discovered(best_code: str, fitted_params, law, syms=None):
+    """Pure (no print). Returns (substituted_expr, simplified_expr, true_expr, matches).
+    `syms` overrides the input symbols (e.g. semantic names for a readable equation)."""
+    if syms is None:
+        syms = _symbols_tuple(law.n_inputs)
+    ns: dict = _sym_namespace()
     cleaned = _clean_params(fitted_params)
-    substituted = sp.sympify(evaluate_law(syms, cleaned))        # [2] params filled + cleaned
+    with _patched_math():
+        exec(best_code, ns)
+        substituted = sp.sympify(ns["evaluate_law"](syms, cleaned))  # [2] params filled + cleaned
     simplified = sp.simplify(_drop_small_additives(substituted))  # [3] guards dropped + folded
     true_expr = sp.simplify(sp.sympify(law.true_law_fn(syms)))    # ground truth, symbolically
     matches = sp.simplify(simplified - true_expr) == 0
     return substituted, simplified, true_expr, matches
+
+
+def _raw_oneline(code: str) -> str:
+    return " ".join((code or "").split())[:220]
+
+
+def format_equation(best_code: str, fitted_params, law, simplify: bool = True,
+                    with_matches: bool = False) -> str:
+    """One-line, human-readable, constant-substituted equation (for progress logs /
+    sweep summaries). Uses the law's SEMANTIC input names for readability. DISPLAY
+    ONLY and fully guarded — NEVER raises; falls back to a raw best_code one-liner."""
+    try:
+        names = list(law.semantic_inputs)
+        syms = sp.symbols(" ".join(names), positive=True)
+        if not isinstance(syms, tuple):
+            syms = (syms,)
+        ns = _sym_namespace()
+        cleaned = _clean_params(fitted_params or ())
+        with _patched_math():
+            exec(best_code, ns)
+            raw = sp.sympify(ns["evaluate_law"](syms, cleaned))
+        expr = sp.simplify(_drop_small_additives(raw)) if simplify else raw
+        out = f"{law.semantic_output} = {expr}"
+        if with_matches:
+            simp = sp.simplify(_drop_small_additives(raw))
+            true_expr = sp.simplify(sp.sympify(law.true_law_fn(syms)))
+            out += f"   [matches_true: {sp.simplify(simp - true_expr) == 0}]"
+        return out
+    except Exception:
+        return _raw_oneline(best_code)
 
 
 def reveal_from_parts(best_code: str, fitted_params, law) -> bool:

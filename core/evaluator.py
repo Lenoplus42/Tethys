@@ -23,11 +23,27 @@ Scoring decisions (§4 Module 2):
 """
 
 import ast
+import math
 
 import numpy as np
 from scipy.optimize import curve_fit
 
 from core.contracts import Dataset, ScoreResult
+
+# CONDITION-BLIND execution namespace (scoring is condition-INDEPENDENT — this is
+# IDENTICAL for both priors and anon; never branch it on condition). Presetting
+# transcendentals lets a candidate run whether it writes `math.log(y)`, `np.log(y)`,
+# or a bare `log(y)`, WITH or WITHOUT importing — eliminating the "forgot to import"
+# failure mode (not promptable; models forget). `ln` is aliased to natural log for
+# the aerospace habit. This changes nothing about WHICH form wins — only whether a
+# math-using candidate is runnable at all.
+_EXEC_BUILTINS = {
+    "math": math, "np": np, "numpy": np,
+    "log": math.log, "ln": math.log, "log10": math.log10,
+    "exp": math.exp, "sqrt": math.sqrt,
+    "sin": math.sin, "cos": math.cos, "tan": math.tan,
+    "pi": math.pi, "e": math.e,
+}
 
 # Lexicographic generalization threshold. A program with test NMSE below EPS is
 # treated as "has found the law"; further competition is purely on simplicity.
@@ -43,8 +59,10 @@ _SUBEPS_OFFSET = 1e6
 
 
 def _exec_program(code: str) -> dict:
-    """exec a candidate string in a fresh namespace; return that namespace."""
-    ns: dict = {}
+    """exec a candidate string in a namespace preseeded with math building blocks
+    (see _EXEC_BUILTINS). A fresh COPY per call (exec mutates the namespace). The
+    namespace is condition-INDEPENDENT — scoring stays condition-blind."""
+    ns: dict = dict(_EXEC_BUILTINS)
     exec(code, ns)
     if "evaluate_law" not in ns or "N_PARAMS" not in ns:
         raise ValueError("program missing evaluate_law/N_PARAMS")

@@ -1,8 +1,8 @@
 """Reveal unit tests (pure-logic, NO network)."""
 
 from core.contracts import RunLog
-from core.laws import NEWTON
-from core.reveal import reveal, simplify_discovered
+from core.laws import NEWTON, ROCKET
+from core.reveal import format_equation, reveal, simplify_discovered
 
 # A bloated-but-equivalent best_code (the kind anon produces): full quadratic basis
 # + a guarded ratio term. With all coeffs ~0 except the ratio term ~1, it reduces
@@ -43,6 +43,18 @@ def test_clean_form_also_matches():
     params = (1.0, 1.0, 1.0, 2.0)   # c0=1, exponents 1,1,2 -> a*b/c**2
     _, simplified, true_expr, matches = simplify_discovered(clean, params, NEWTON)
     assert matches is True
+
+
+def test_reveal_handles_transcendental_log_forms():
+    # the symbolic reveal must run on log forms (math.log / bare log) without
+    # crashing on math.log(symbol), and fold to the Tsiolkovsky truth.
+    mathlog = "N_PARAMS=1\ndef evaluate_law(inputs, params):\n    v, r = inputs\n    return params[0]*v*math.log(r)\n"
+    _, simplified, _, matches = simplify_discovered(mathlog, (1.0,), ROCKET)
+    assert matches is True
+    # the readable one-line formatter works for math.log AND bare log (no import)
+    bare = "N_PARAMS=1\ndef evaluate_law(inputs, params):\n    v, r = inputs\n    return params[0]*v*log(r)\n"
+    eq = format_equation(bare, (1.0,), ROCKET, simplify=True, with_matches=True)
+    assert "matches_true: True" in eq and "log(mass_ratio)" in eq
 
 
 def test_reveal_from_runlog_offline_uses_stored_params():

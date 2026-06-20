@@ -11,6 +11,17 @@ import math
 
 from core.contracts import LawSpec
 
+
+def _safe_log(z):
+    """Natural log usable by BOTH data generation (float inputs) and the symbolic
+    reveal (sympy symbols): math.log on a symbol raises TypeError -> fall back to
+    sympy.log. Keeps laws.py free of a hard sympy dependency for data gen."""
+    try:
+        return math.log(z)
+    except TypeError:
+        import sympy as sp
+        return sp.log(z)
+
 # Newton constant, chosen as 1.0 to keep outputs O(1)-O(100) for curve_fit stability
 # (we are not modelling SI units — only numeric structure).
 G = 1.0
@@ -72,7 +83,7 @@ NEWTON = LawSpec(
 ROCKET = LawSpec(
     name="rocket",
     n_inputs=2,
-    true_law_fn=lambda inputs: inputs[0] * math.log(inputs[1]),
+    true_law_fn=lambda inputs: inputs[0] * _safe_log(inputs[1]),
     true_law_str="delta_v = v_e * ln(mass_ratio)  (Tsiolkovsky)",
     target_form_hint="c0 * v_e * log(mass_ratio)",
     n_params=1,

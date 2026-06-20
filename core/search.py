@@ -238,6 +238,24 @@ def _call_llm(client, prompt: str, temperature: float):
     return None, reason
 
 
+def _best_eqn(db, dataset, simplify, with_matches=False) -> str:
+    """Guarded one-line equation of the current best() — the SAME selection reveal
+    uses (lexicographically-shortest sub-EPS form). DISPLAY ONLY: never raises, no
+    LLM, zero effect on search/scoring/selection. Falls back to a raw one-liner."""
+    try:
+        from core.reveal import _LAW_REGISTRY, format_equation
+        b = db.best()
+        if not b:
+            return "-"
+        law = _LAW_REGISTRY.get(dataset.law_name)
+        if law is None:
+            return " ".join(b[0].split())[:160]
+        return format_equation(b[0], b[1].fitted_params, law,
+                               simplify=simplify, with_matches=with_matches)
+    except Exception:
+        return "-"
+
+
 def run_search(dataset: Dataset, budget: int, seed: int, batch_size: int = BATCH_SIZE) -> RunLog:
     """Evolutionary search to a GLOBAL budget (total programs evaluated, the
     ablation x-axis). Stops early if best_test_error < EPS. Returns a fully
@@ -300,11 +318,10 @@ def run_search(dataset: Dataset, budget: int, seed: int, batch_size: int = BATCH
         rec.update(len(results), db.best_test_error(), ptok, ctok)
 
         best = db.best()
-        snippet = " ".join(best[0].split())[:80] if best else "-"
         _log_progress(f"{_now()} round={round_idx} evald={rec.total_evaluated} "
                       f"best_err={rec.best_test_error:.3e} pool={len(db)} temp={temperature:.3f} "
                       f"ctok={rec.total_completion_tokens} ptok={rec.total_prompt_tokens} "
-                      f"best_code='{snippet}'")
+                      f"best_eqn: {_best_eqn(db, dataset, simplify=False)}")
 
         # --- Occam-patience convergence ---------------------------------------
         # Don't freeze on the first (often bloated) sub-EPS program. Once below
@@ -337,6 +354,7 @@ def run_search(dataset: Dataset, budget: int, seed: int, batch_size: int = BATCH
                   f"rounds={round_idx} evald={rec.total_evaluated} "
                   f"best_err={rec.best_test_error:.3e} converged={rec.best_test_error < EPS} "
                   f"ctok={rec.total_completion_tokens} ptok={rec.total_prompt_tokens}")
+    _log_progress(f"   └ final_eqn: {_best_eqn(db, dataset, simplify=True, with_matches=True)}")
     return RunLog(
         law_name=dataset.law_name,
         condition=dataset.condition,
