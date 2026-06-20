@@ -7,6 +7,7 @@ from core.ablation_experiment import (
     first_crossing,
     load_runlog,
     plot_ablation,
+    plot_comparison,
     save_runlog,
 )
 from core.contracts import RunLog
@@ -92,6 +93,19 @@ def test_plot_ablation_writes_png(tmp_path):
     price = compute_prior_price(logs, e_target=1e-4)
     out = tmp_path / "ablation.png"
     plot_ablation(logs, out, e_target=1e-4, law_name="newton", price=price)
+    assert out.exists() and out.stat().st_size > 0
+
+
+def test_plot_comparison_writes_png(tmp_path):
+    # two "laws" with different gaps -> the everything-plot (ordered by gap)
+    big_gap = {"anon": [_mk("anon", 0, ANON_ERR, ANON_TOK)],
+               "priors": [_mk("priors", 0, PRI_ERR, PRI_TOK)]}
+    no_gap = {"anon": [_mk("anon", 0, PRI_ERR, PRI_TOK)],     # anon ~ priors (gap ~1)
+              "priors": [_mk("priors", 0, PRI_ERR, PRI_TOK)]}
+    law_logs = {"newton": big_gap, "kepler": no_gap}
+    prices = {n: compute_prior_price(lg, e_target=1e-4) for n, lg in law_logs.items()}
+    out = tmp_path / "ablation_comparison.png"
+    plot_comparison(law_logs, out, e_target=1e-4, prices=prices)
     assert out.exists() and out.stat().st_size > 0
 
 

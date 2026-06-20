@@ -140,16 +140,10 @@ def _step_interp(xs, ys, grid, floor):
     return out
 
 
-def plot_ablation(logs, save_path, e_target=E_TARGET, law_name=None, price=None):
-    """Save a log-log PNG: priors vs anon error-vs-compute curves, per-seed faint
-    lines + mean, std band over seeds, shaded gap between the means, E_TARGET line,
-    and the PRIOR_PRICE annotation."""
-    import matplotlib
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-
+def _draw_ablation_on_ax(ax, logs, e_target, law_name=None, price=None, show_ylabel=True):
+    """Draw ONE law's ablation onto a given Axes (shared by single + comparison plots):
+    per-seed faint lines + mean, std band over seeds, shaded gap, E_TARGET line, title."""
     colors = {"priors": "tab:blue", "anon": "tab:red"}
-    fig, ax = plt.subplots(figsize=(8, 6))
 
     curves, gxmin, gxmax = {}, np.inf, -np.inf
     for cond in ("anon", "priors"):
@@ -182,7 +176,7 @@ def plot_ablation(logs, save_path, e_target=E_TARGET, law_name=None, price=None)
         mean_y = 10 ** m
         ax.plot(grid, mean_y, color=colors[cond], lw=2.6, zorder=5,
                 label=f"{cond} (n={len(cs)})")
-        if len(cs) > 1:                            # std band only with >=2 seeds
+        if len(cs) > 1:                            # std band over seeds (the error bars)
             ax.fill_between(grid, 10 ** (m - sd), 10 ** (m + sd),
                             color=colors[cond], alpha=0.15)
         means[cond] = mean_y
@@ -198,22 +192,62 @@ def plot_ablation(logs, save_path, e_target=E_TARGET, law_name=None, price=None)
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.set_xlabel("total programs evaluated  (inference compute →)")
-    ax.set_ylabel("test error (NMSE)  ↓ better")
-    title = f"The price of a prior — {law_name or ''}".strip(" —")
+    if show_ylabel:
+        ax.set_ylabel("test error (NMSE)  ↓ better")
+
     pp = (price or {}).get("prior_price", {}).get("mean")
     ppt = (price or {}).get("prior_price_tokens", {}).get("mean")
+    title = (law_name or "").strip()
     if pp:
         ann = f"PRIOR_PRICE ≈ {pp:.1f}× (programs)"
         if ppt:
-            ann += f"  ·  {ppt:.1f}× (tokens)"
-        title = f"{title}\n{ann}"
-    ax.set_title(title)
+            ann += f" · {ppt:.1f}× (tokens)"
+        title = f"{title}\n{ann}" if title else ann
+    if title:
+        ax.set_title(title)
     ax.legend(loc="lower left", fontsize=9)
     ax.grid(True, which="both", ls=":", alpha=0.3)
-    fig.tight_layout()
 
+
+def plot_ablation(logs, save_path, e_target=E_TARGET, law_name=None, price=None):
+    """Save a single-law log-log PNG (per-seed lines + mean, std band, shaded gap)."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+    _draw_ablation_on_ax(ax, logs, e_target, f"The price of a prior — {law_name or ''}".strip(" —"), price)
+    fig.tight_layout()
     Path(save_path).parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(save_path, dpi=130)
+    plt.close(fig)
+    return str(save_path)
+
+
+def plot_comparison(law_logs, save_path, e_target=E_TARGET, prices=None, order=None):
+    """THE everything-plot: one panel per law, shared log-y, ordered by increasing
+    gap so Kepler (control, ~1×) sits left of Newton (~10×) — the escalation story.
+    `law_logs` = {law_name: sweep_dict}; `prices` = {law_name: compute_prior_price(...)}."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    prices = prices or {}
+    names = order or sorted(
+        law_logs,
+        key=lambda n: (prices.get(n, {}).get("prior_price", {}) or {}).get("mean") or 0.0,
+    )
+    fig, axes = plt.subplots(1, len(names), figsize=(7.5 * len(names), 6), sharey=True)
+    if len(names) == 1:
+        axes = [axes]
+    for i, (ax, name) in enumerate(zip(axes, names)):
+        _draw_ablation_on_ax(ax, law_logs[name], e_target, law_name=name,
+                             price=prices.get(name), show_ylabel=(i == 0))
+
+    fig.suptitle("The price of a prior — the gap grows with law complexity", fontsize=15, y=1.02)
+    fig.tight_layout()
+    Path(save_path).parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(save_path, dpi=130, bbox_inches="tight")
     plt.close(fig)
     return str(save_path)
 
@@ -281,7 +315,11 @@ def main(argv=None):
     import argparse
 
     p = argparse.ArgumentParser(description="Run the price-of-a-prior ablation.")
-    p.add_argument("--law", required=True, choices=sorted(_LAW_BY_NAME))
+    p.add_argument("--law", choices=sorted(_LAW_BY_NAME),
+                   help="run/plot a single law")
+    p.add_argument("--compare", default=None,
+                   help="comma-separated laws -> the combined everything-plot from SAVED logs "
+                        "(implies --no-run), e.g. --compare kepler,newton")
     p.add_argument("--budget", type=int, default=300)
     p.add_argument("--seeds", default="0,1,2")
     p.add_argument("--out", default="runlogs")
@@ -290,9 +328,24 @@ def main(argv=None):
                    help="reload saved RunLogs and re-plot/re-price WITHOUT spending tokens")
     args = p.parse_args(argv)
 
-    law = _LAW_BY_NAME[args.law]
     seeds = tuple(int(s) for s in args.seeds.split(","))
     out_dir = Path(args.out)
+
+    # combined everything-plot from saved logs (the escalation story)
+    if args.compare:
+        names = [n.strip() for n in args.compare.split(",")]
+        law_logs = {n: load_sweep(out_dir, n, seeds) for n in names}
+        prices = {n: compute_prior_price(lg, e_target=args.e_target) for n, lg in law_logs.items()}
+        png = plot_comparison(law_logs, out_dir / "ablation_comparison.png",
+                              e_target=args.e_target, prices=prices)
+        for n in names:
+            _print_summary(_LAW_BY_NAME[n], prices[n], f"(in {png})")
+        print(f"\ncombined plot  : {png}")
+        return
+
+    if not args.law:
+        p.error("either --law or --compare is required")
+    law = _LAW_BY_NAME[args.law]
 
     if args.no_run:
         logs = load_sweep(out_dir, law.name, seeds)
