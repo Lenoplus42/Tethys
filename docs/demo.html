@@ -68,6 +68,39 @@ h2.head{font-size:clamp(24px,3.3vw,42px);font-weight:780;letter-spacing:-.02em;l
 .compare{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:18px;max-width:1080px}
 .card{background:var(--bg2);border:1px solid var(--line);border-radius:11px;padding:18px 22px}
 .card.truth{border-left:3px solid var(--amber)} .card.disc{border-left:3px solid var(--teal)}
+.card.cost{border-left:3px solid var(--amber)} .card.weight{border-left:3px solid var(--teal)}
+.card .bigeq{margin:2px 0 10px;color:var(--ink)}
+.card .ec{font-size:13.5px;color:var(--muted);line-height:1.5} .card .ec b{color:var(--ink);font-weight:600}
+.recip{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:center;margin:12px 0 2px} .recip b{color:var(--ink);font-weight:500}
+.limitbox{background:rgba(167,139,250,.07);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:12px;padding:6px 24px 14px;margin-top:14px;max-width:1120px}
+.limitbox .lc{font-size:14px;color:var(--muted);line-height:1.55;margin-top:2px} .limitbox .lc b{color:var(--teal);font-weight:600} .limitbox .lc .amb{color:var(--amber)}
+.qgrid{display:grid;grid-template-columns:1.04fr 0.96fr;gap:30px;align-items:start;margin-top:10px}
+@media(max-width:980px){.qgrid{grid-template-columns:1fr}}
+.qcol{display:flex;flex-direction:column;gap:11px}
+.idealpanel{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:10px 20px 4px}
+.panel-h{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:4px 0 2px}
+.lens{padding:4px 0 2px;border-bottom:1px solid var(--line)} .lens:last-child{border-bottom:0}
+.lens .leq{color:var(--ink);font-size:.92em} .lens .lcap{font-size:12px;color:var(--muted);line-height:1.42;margin-top:-4px} .lens .lcap b{color:var(--teal);font-weight:600}
+.glossary{display:flex;flex-wrap:wrap;gap:7px 8px;margin-top:14px;max-width:1220px}
+.gv{font-family:var(--mono);font-size:11px;color:var(--muted);background:var(--bg2);border:1px solid var(--line);border-radius:7px;padding:3px 9px} .gv b{color:var(--ink);font-weight:600}
+/* rocket parks on the right, then sprints left pulling a spectrum exhaust trail */
+@keyframes flick{0%,100%{opacity:.95}50%{opacity:.45}}
+#wipe{position:fixed;inset:0;z-index:70;pointer-events:none;visibility:hidden;overflow:hidden}
+#wipe.parked,#wipe.go{visibility:visible}
+.wipegroup{position:absolute;top:0;left:0;height:100%;display:flex;align-items:center;transform:translateX(150vw)}
+#wipe.parked .wipegroup{transform:translateX(82vw)}
+#wipe.launch .wipegroup{animation:launchSweep 1.7s cubic-bezier(.5,0,.7,.5) forwards}
+#wipe.sweep  .wipegroup{animation:wipeSweep .95s cubic-bezier(.62,0,.3,1) forwards}
+@keyframes launchSweep{0%{transform:translateX(82vw)}100%{transform:translateX(-270vw)}}
+@keyframes wipeSweep{0%{transform:translateX(150vw)}100%{transform:translateX(-270vw)}}
+.wipe-rocket{display:none;flex:0 0 auto;width:230px;z-index:3;filter:drop-shadow(0 0 12px rgba(255,255,255,.4))}
+#wipe.parked .wipe-rocket,#wipe.withrocket .wipe-rocket{display:block}
+#wipe.parked .wipe-rocket .flame,#wipe.withrocket .wipe-rocket .flame{animation:flick .14s steps(2) infinite;transform-origin:center}
+.wipe-tail{position:relative;flex:0 0 auto;align-self:stretch;display:flex;align-items:center;margin-left:-26px}
+.wipe-tail .curtain{position:absolute;left:0;top:0;height:100%;width:270vw;background:#07070a;
+  background-image:radial-gradient(circle at 1px 1px, rgba(255,255,255,.025) 1px, transparent 0);background-size:22px 22px}
+.wipe-beams{position:relative;z-index:2;display:flex;flex-direction:column;gap:7px}
+.wipe-beams i{display:block;width:270vw;height:5px;border-radius:3px;background:var(--c);box-shadow:0 0 16px 1px var(--c)}
 .card .h{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
 .codecard{font-family:var(--mono);font-size:clamp(13px,1.35vw,17px);line-height:1.6;color:#d8d8e2}
 .codecard .kw{color:var(--accent)} .codecard .fn{color:var(--teal)} .codecard .num{color:var(--amber)}
@@ -104,7 +137,7 @@ ul.clean{margin:.4em 0;padding-left:1.2em} ul.clean li{margin:.4em 0;color:#d2d2
 <div class="chrome">
   <div class="progress" id="prog"></div>
   <div class="tick tl"></div><div class="tick tr"></div><div class="tick bl"></div><div class="tick br"></div>
-  <div class="wordmark">TETHYS <b>// THE PRICE OF A PRIOR</b></div>
+  <div class="wordmark">TETHYS <b>// THE PRICE OF DISCOVERY</b></div>
   <div class="counter"><b id="cNow">00</b> / <span id="cTot">00</span></div>
   <div class="hint" id="hint">SPACE / CLICK → ADVANCE &nbsp;·&nbsp; A → MATH APPENDIX</div>
 </div>
@@ -113,27 +146,79 @@ ul.clean{margin:.4em 0;padding-left:1.2em} ul.clean li{margin:.4em 0;color:#d2d2
 
   <!-- 0 · TITLE -->
   <section class="slide">
-    <div class="slabel step"><span class="chip"><span class="sector"></span> RACE START</span></div>
-    <h1 class="title step">THE PRICE<br/>OF A <span class="thin">PRIOR.</span></h1>
+    <div class="slabel step"><span class="chip"><span class="sector"></span> GO FOR LAUNCH</span></div>
+    <h1 class="title step">THE PRICE<br/>OF <span class="thin">DISCOVERY.</span></h1>
     <p class="sub step">A Solomonoff measurement of the exchange rate between <b style="color:var(--ink)">inference
       compute</b> and <b style="color:var(--ink)">discovery</b>. One equation-discovery engine, run with an AI's prior
       switched on, then off, on identical data — and the difference priced in compute.</p>
-    <p class="sub step" style="color:var(--teal)">This run: Kepler ≈ 1.05× · Newton ≈ 20× · and the engine rediscovers m₁m₂/r² blind.</p>
+    <p class="sub step" style="color:var(--teal)">This run: Kepler ≈ 1× (control) · Rocket ≈ 12× · Newton ≈ 20× · and the engine rediscovers Tsiolkovsky's Δv = v_e·ln(m₀/m₁) blind.</p>
+    <p class="step" style="font-family:var(--mono);font-size:12px;color:var(--faint);letter-spacing:.03em;margin-top:20px;max-width:880px">
+      Engine: FunSearch (DeepMind, 2023) · LLM-SR (ICLR 2025) — proven equation discovery. Our lens: make the model's
+      prior a knob, and price it in compute.</p>
   </section>
 
   <!-- 1 · THE QUESTION -->
   <section class="slide">
     <div class="slabel"><span class="chip"><span class="id">01</span> THE QUESTION <span class="sector"></span></span></div>
     <h2 class="head step">What could you discover with <span style="color:var(--teal)">infinite compute?</span></h2>
-    <p class="sub step" style="max-width:960px">Discovery is a <b style="color:var(--ink)">search over programs</b>.
-      Give that search unlimited inference and it can sweep the whole space of hypotheses — so the bottleneck stops
-      being <i>can we compute it</i> and becomes <i>how well can we guess where to look</i>. That guess is the
-      <b style="color:var(--teal)">prior</b>.</p>
-    <div class="step eqs">$$M(x)=\!\!\sum_{p\,:\,U(p)=x}\!\! 2^{-|p|}$$</div>
-    <div class="step eqcap"><b>Solomonoff induction</b> — the optimal predictor: sum over every program that reproduces the data, weighted by simplicity $2^{-|p|}$. It is uncomputable.</div>
-    <div class="step eqs">$$Kt(x)=\min_{p}\big(\,|p|\;+\;\log_2 t(p)\,\big)$$</div>
-    <div class="step eqcap"><b>Levin search</b> — its computable form. It prices description length <i>and</i> compute in one quantity; $\log_2 t(p)$ <b>is</b> inference compute.</div>
-    <div class="oneline step" style="margin-top:8px"><span class="mut">Infinite compute makes the </span>$\log_2 t$<span class="mut"> term free — you converge to ranking by simplicity alone: Solomonoff's ideal. That is why we built on it. Our engine is a tractable shadow of Solomonoff/Levin; our experiment prices the prior </span><span class="teal">inside</span><span class="mut"> it.</span></div>
+    <p class="sub step" style="max-width:1180px">Discovery is a <b style="color:var(--ink)">search over programs</b>. Levin's one number —
+      $Kt(p)=|p|+\log_2 t(p)$ — governs it and reads <b style="color:var(--ink)">two ways</b> (left); both are tractable
+      shadows of the ideal predictor (right).</p>
+    <div class="qgrid">
+      <div class="qcol">
+        <div class="card cost step">
+          <div class="h">① COST &nbsp;·&nbsp; compute to FIND p</div>
+          <div class="bigeq">$$2^{\,Kt(p)} \;=\; 2^{\,|p|}\,t(p)$$</div>
+          <div class="ec"><b>Big = expensive.</b> A longer or slower program takes exponentially more search. This is
+            our x-axis: programs evaluated, $B$.</div>
+        </div>
+        <div class="card weight step">
+          <div class="h">② WEIGHT &nbsp;·&nbsp; how much we BELIEVE p</div>
+          <div class="bigeq">$$2^{-Kt(p)} \;=\; \dfrac{2^{-|p|}}{t(p)}$$</div>
+          <div class="ec"><b>Big = believed.</b> The reciprocal of cost — shorter ⇒ more probable. The minus sign
+            lives <i>here</i>, in the belief.</div>
+        </div>
+        <div class="recip step">weight = 1 / cost &nbsp;·&nbsp; <b>same $Kt$, flipped sign</b> — the bill vs the belief</div>
+      </div>
+      <div class="idealpanel step">
+        <div class="panel-h">The ideal we approximate</div>
+        <div class="lens">
+          <div class="leq">$$M(x)=\!\!\sum_{p\,:\,U(p)=x}\!\!2^{-|p|}$$</div>
+          <div class="lcap"><b>Solomonoff prior</b> — every program that fits, voting $2^{-|p|}$. Sum of all the weights on the left.</div>
+        </div>
+        <div class="lens">
+          <div class="leq">$$\mathbb{E}_M\!\left[x_{n+1}\mid x_{1:n}\right]=\dfrac{M(x_{1:n}\,x_{n+1})}{M(x_{1:n})}$$</div>
+          <div class="lcap"><b>Solomonoff's perfect expectation</b> — the provably optimal prediction of the next observation. No computable predictor beats it. The gold standard.</div>
+        </div>
+        <div class="lens">
+          <div class="leq">$$K(x)=\min_{p\,:\,U(p)=x}|p|$$</div>
+          <div class="lcap"><b>Kolmogorov complexity</b> — the single shortest program. What the weight points to as time → 0.</div>
+        </div>
+        <div class="lens">
+          <div class="leq">$$Kt(x)=\min_{p}\big(|p|+\log_2 t(p)\big)$$</div>
+          <div class="lcap"><b>Levin complexity</b> — computable: length + compute. The two cards on the left are this, exponentiated.</div>
+        </div>
+      </div>
+    </div>
+    <div class="glossary step">
+      <span class="gv"><b>$x$</b> the data</span>
+      <span class="gv"><b>$p$</b> a program = one hypothesis</span>
+      <span class="gv"><b>$U$</b> universal machine (our Python)</span>
+      <span class="gv"><b>$U(p)=x$</b> p reproduces the data</span>
+      <span class="gv"><b>$|p|$</b> length in bits ≈ AST nodes</span>
+      <span class="gv"><b>$t(p)$</b> runtime · capped 500 ms</span>
+      <span class="gv"><b>$M(x)$</b> Solomonoff prior</span>
+      <span class="gv"><b>$K(x)$</b> shortest $|p|$</span>
+      <span class="gv"><b>$Kt(x)$</b> $|p|+\log_2 t$</span>
+      <span class="gv"><b>$B$</b> programs evaluated</span>
+    </div>
+    <div class="limitbox step">
+      <div class="bigeq" style="text-align:center">$$2^{-Kt(p)}\;\xrightarrow[\;\log_2 t(p)\,\to\,0\;]{}\;2^{-|p|}
+        \qquad\Longrightarrow\qquad M(x)=\!\!\sum_{p\,:\,U(p)=x}\!\!2^{-|p|}$$</div>
+      <div class="lc">Free compute kills the $\log_2 t$ term: each program's belief collapses to <b>pure simplicity</b>
+        $2^{-|p|}$; sum over all of them and you recover <b>Solomonoff's $M(x)$</b> — the perfect expectation above.
+        Meanwhile the <span class="amb">cost</span> is what a good prior buys down: <b>DISCOVERY_PRICE = cost(anon) / cost(priors)</b> — 12× on Rocket, 20× on Newton.</div>
+    </div>
   </section>
 
   <!-- 2 · THE GAP -->
@@ -179,7 +264,8 @@ ul.clean{margin:.4em 0;padding-left:1.2em} ul.clean li{margin:.4em 0;color:#d2d2
   <!-- 4 · THE REVEAL -->
   <section class="slide">
     <div class="slabel"><span class="chip"><span class="id">04</span> THE REVEAL <span class="sector"></span></span></div>
-    <h2 class="head step">Strip every name. From numbers alone, the engine writes the rocket equation.</h2>
+    <h2 class="head step">Strip every label. From raw numbers alone, the engine writes the equation that <span style="color:var(--teal)">launched the space age.</span></h2>
+    <p class="sub step" style="max-width:1040px;margin-top:-2px">Tsiolkovsky's rocket equation, 1903 — the math behind every launch from Apollo to Artemis — rediscovered <b style="color:var(--ink)">blind, in 8 programs.</b></p>
     <div class="compare">
       <div class="card truth step">
         <div class="h">Ground truth · Tsiolkovsky, 1903</div>
@@ -330,7 +416,7 @@ ul.clean{margin:.4em 0;padding-left:1.2em} ul.clean li{margin:.4em 0;color:#d2d2
       <div class="step">
         <div class="sliderbox">
           <div class="rlabel">INFERENCE THROUGHPUT &nbsp; R = <b id="vR">—</b> programs/sec <span class="rtag" id="rTag">today</span></div>
-          <input id="sR" type="range" min="0" max="7" step="0.05" value="1.1"/>
+          <input id="sR" type="range" min="-1.5" max="7" step="0.05" value="-0.5"/>
         </div>
         <div class="statline" style="margin-top:24px">
           <div class="stat"><div class="n teal" id="aTp">—</div><div class="l">priors · time to discovery</div></div>
@@ -342,15 +428,50 @@ ul.clean{margin:.4em 0;padding-left:1.2em} ul.clean li{margin:.4em 0;color:#d2d2
         </div>
       </div>
     </div>
+    <div class="step" style="font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:8px;max-width:1120px">
+      Today ≈ 0.3 programs/sec — each candidate is one LLM proposal (~118 tokens ≈ 3 s of generation), so the blind
+      Newton search really costs ~5–25 min (matching our runs). At near-infinite throughput it collapses to microseconds.</div>
     <div class="step eqs" style="margin-top:6px">$$\Delta t \;=\; \frac{B_{\text{anon}}-B_{\text{priors}}}{R}\;\xrightarrow[\;R\to\infty\;]{}\;0$$</div>
     <div class="oneline step" style="margin-top:2px"><span class="mut">The 20× is </span><span class="amber">this run, this law</span><span class="mut"> — it swings 1.7–100× across seeds and changes for every theorem. What is universal is the limit: </span><span class="teal">whatever the price, free compute drives its felt cost to zero.</span></div>
   </section>
 
 </div>
 
+<!-- directional streak wipe (slide transitions) -->
+<div id="wipe" aria-hidden="true">
+  <div class="wipegroup">
+    <div class="wipe-rocket">
+      <svg viewBox="0 0 232 44" width="100%" xmlns="http://www.w3.org/2000/svg">
+        <path class="flame" d="M202 22 L232 13 L218 22 L232 31 Z" fill="#f59e0b"/>
+        <path d="M6 22 L44 11 H190 L202 16 V28 L190 33 H44 Z" fill="#eef0f4"/>
+        <rect x="120" y="11" width="8" height="22" fill="#11131a"/>
+        <rect x="150" y="11" width="4" height="22" fill="#2dd4bf"/>
+        <rect x="64" y="4" width="14" height="7" rx="1.5" fill="#9aa0ad"/>
+        <rect x="64" y="33" width="14" height="7" rx="1.5" fill="#9aa0ad"/>
+        <path d="M188 11 L204 2 L200 11 Z" fill="#cfd3db"/>
+        <path d="M188 33 L204 42 L200 33 Z" fill="#cfd3db"/>
+      </svg>
+    </div>
+    <div class="wipe-tail">
+      <div class="curtain"></div>
+      <div class="wipe-beams">
+        <i style="--c:#a78bfa"></i><i style="--c:#2dd4bf"></i><i style="--c:#4ade80"></i><i style="--c:#f5d90a"></i><i style="--c:#f59e0b"></i><i style="--c:#ef4444"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
 <button class="closeapp" id="closeApp" style="display:none">ESC · CLOSE</button>
 <div class="appendix" id="appendix">
   <div class="applabel">Appendix · mathematical foundations &amp; Q&amp;A armor</div>
+  <h2>What we build on — and our lens</h2>
+  <p><b>FunSearch</b> (DeepMind, Nature 2023) and <b>LLM-SR</b> (ICLR 2025) established the method we use: an LLM
+  proposes candidate <i>programs</i>, an evolutionary loop scores them against data, and the survivors seed the next
+  round — proven, exactly-verifiable equation discovery. <b>In-Context Symbolic Regression</b> (Merler, 2024) pairs the
+  LLM's proposed <i>form</i> with an external optimizer for the constants — our <code>curve_fit</code> step. We claim
+  <i>none</i> of this engine as novel. Our contribution is a <b>new lens on it</b>: hold the engine fixed, switch the
+  model's semantic prior on and off as the single independent variable, and read the <i>compute</i> gap that opens —
+  the price of the prior. The same proven machinery, pointed at a question it was never used to ask.</p>
   <h2>Solomonoff induction — the identity of PRIOR_PRICE</h2>
   <p>Solomonoff induction predicts the next observation by summing over <i>every</i> computable program that
   reproduces the data, weighting each by $2^{-|p|}$ — Occam's razor as a probability measure.</p>
@@ -462,17 +583,22 @@ function drawGap(div,law){
 
 // slide 3: gamble vs certainty — real per-seed spaghetti (rolled back)
 function drawSpread(){
-  const tr=[]; const N=DATA.newton.traces;
-  N.priors.forEach(s=>tr.push({x:s.map(p=>p[0]),y:s.map(p=>clamp(p[1])),mode:'lines+markers',
-    line:{color:C.teal,width:2},marker:{size:5,color:C.teal},opacity:.9,hoverinfo:'skip'}));
+  const tr=[]; const N=DATA.newton.traces; const S=DATA.newton.seed;
+  const bpr=[S[0].B_priors,S[1].B_priors,S[2].B_priors];
+  // anon — real descending traces (the gamble)
   N.anon.forEach(s=>tr.push({x:s.map(p=>p[0]),y:s.map(p=>clamp(p[1])),mode:'lines+markers',
-    line:{color:C.amber,width:2},marker:{size:5,color:C.amber},opacity:.92,hoverinfo:'skip'}));
+    line:{color:C.amber,width:2.5},marker:{size:5,color:C.amber},opacity:.95,hoverinfo:'skip'}));
+  // priors — bold teal plunge: each seed crosses E* then drops to machine-zero by B≈5–6 (visible, not a floor line)
+  bpr.forEach(b=>tr.push({x:[b,b],y:[ETARGET,clamp(0)],mode:'lines',line:{color:C.teal,width:3.5},hoverinfo:'skip'}));
+  tr.push({x:bpr,y:bpr.map(()=>ETARGET),mode:'markers',marker:{color:C.teal,size:15,line:{color:'#04110f',width:2}},hoverinfo:'skip'});
+  // E* line + labels
   tr.push({x:[1,800],y:[ETARGET,ETARGET],mode:'lines',line:{color:C.accent,width:1.4,dash:'dot'},hoverinfo:'skip'});
   tr.push({x:[820],y:[ETARGET],mode:'text',text:['E* = 1e-4'],textposition:'middle left',textfont:{color:C.accent,size:11},hoverinfo:'skip'});
   const s=DATA.newton.seed;
   [['1.7×',s[0].B_anon],['49×',s[1].B_anon],['100×',s[2].B_anon]].forEach(([lbl,b])=>
-    tr.push({x:[b],y:[ETARGET*4],mode:'text',text:[lbl],textfont:{color:C.amber,size:13},hoverinfo:'skip'}));
-  tr.push({x:[5.3],y:[ETARGET*4],mode:'text',text:['priors'],textfont:{color:C.teal,size:13},hoverinfo:'skip'});
+    tr.push({x:[b],y:[ETARGET*5],mode:'text',text:[lbl],textfont:{color:C.amber,size:13},hoverinfo:'skip'}));
+  tr.push({x:[Math.exp((Math.log(Math.min(...bpr))+Math.log(Math.max(...bpr)))/2)],y:[0.2],mode:'text',
+    text:['priors · all 3 seeds ≤8'],textfont:{color:C.teal,size:13},hoverinfo:'skip'});
   Plotly.react('spread',tr,lay('PROGRAMS EVALUATED  (COMPUTE →)','TEST ERROR  (NMSE)',
     {x:{range:[0,3]},y:{range:[Math.log10(FLOOR),Math.log10(0.8)]}}),CFG);
 }
@@ -480,10 +606,10 @@ function drawSpread(){
 // slide 5: asymptote
 function drawAsym(){
   const {bp,ba}=cross('newton'); const R=Math.pow(10,+document.getElementById('sR').value);
-  document.getElementById('vR').textContent = R>=1000?(R/1000).toFixed(1)+'k':R.toFixed(1);
+  document.getElementById('vR').textContent = R>=1000?(R/1000).toFixed(1)+'k':R>=1?R.toFixed(1):R.toFixed(2);
   const lv=+document.getElementById('sR').value;
-  document.getElementById('rTag').textContent = lv<2?'today':lv<4.5?'scaling':'near-∞ · Etched';
-  const Rs=[]; for(let i=0;i<=60;i++) Rs.push(Math.pow(10,7*i/60));
+  document.getElementById('rTag').textContent = lv<1?'today · measured':lv<4.5?'scaling':'near-∞ · the future';
+  const Rs=[]; for(let i=0;i<=68;i++) Rs.push(Math.pow(10,-1.5+8.5*i/68));
   const t=[
     {x:Rs,y:Rs.map(r=>ba/r),mode:'lines',line:{color:C.amber,width:3},hoverinfo:'skip'},
     {x:Rs,y:Rs.map(r=>bp/r),mode:'lines',line:{color:C.teal,width:3},hoverinfo:'skip'},
@@ -516,12 +642,21 @@ function show(i,fromStart){
   const st=stepsOf(slides[si]);
   pi=fromStart?0:Math.max(0,st.length-1);
   st.forEach((e,k)=>e.classList.toggle('on',k<=pi));
+  document.getElementById('wipe').classList.toggle('parked', si===0);  // rocket waits on the title's right
   renderChart(si); chrome();
 }
-function next(){ const st=stepsOf(slides[si]);
+let transitioning=false;
+function launchTransition(){              // PAGE 1 ONLY: parked rocket sprints off (slow→fast), then reveal slide 1
+  if(transitioning) return; transitioning=true;
+  const w=document.getElementById('wipe');
+  w.classList.remove('parked'); w.classList.add('go','launch','withrocket');
+  setTimeout(()=>show(1,true), 1010);     // swap slide while curtain covers
+  setTimeout(()=>{ w.classList.remove('go','launch','withrocket'); transitioning=false; }, 1760);
+}
+function next(){ if(transitioning) return; const st=stepsOf(slides[si]);
   if(pi<st.length-1){ pi++; st[pi].classList.add('on'); }
-  else if(si<slides.length-1){ show(si+1,true); } }
-function prev(){ const st=stepsOf(slides[si]);
+  else if(si<slides.length-1){ if(si===0){ launchTransition(); } else { show(si+1,true); } } }   // rest: plain change
+function prev(){ if(transitioning) return; const st=stepsOf(slides[si]);
   if(pi>0){ st[pi].classList.remove('on'); pi--; }
   else if(si>0){ show(si-1,false); } }
 function chrome(){
@@ -532,6 +667,7 @@ function chrome(){
 }
 const app=document.getElementById('appendix'), closeBtn=document.getElementById('closeApp');
 function toggleApp(open){ app.classList.toggle('open',open); closeBtn.style.display=open?'block':'none';
+  document.getElementById('wipe').style.display = open?'none':'';   // keep the parked rocket out of the appendix
   if(open && window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([app]); }
 document.getElementById('sR').addEventListener('input',drawAsym);
 document.getElementById('sR').addEventListener('keydown',e=>e.stopPropagation());
