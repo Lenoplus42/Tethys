@@ -257,9 +257,10 @@ programs with `test_error < EPS` (impl: `EPS = 1e-6`, the "law found" threshold 
 §2.2's `E_TARGET = 1e-4`), rank purely by `-length`; above `EPS`, rank by `-test_error`.
 `combine_score` encodes this single order so every sub-EPS program outranks every supra-EPS one.
 `description_length` = AST node count of the `evaluate_law` body (NOT chars — whitespace can't be
-gamed). `score_program` also wraps a lightweight single-thread SIGALRM timeout so a pathological
-candidate (`while True`) can't hang a pure call; the REAL hard timeout stays in the sandbox
-(Module 4). Headline signal is always `test_error`.
+gamed). `score_program` is **pure scoring with NO internal timeout** (an earlier SIGALRM net was
+removed): runaway/timeout authority lives SOLELY in the sandbox's ProcessPoolExecutor (Module 4),
+so never call `score_program` on untrusted code without the sandbox. Headline signal is always
+`test_error`.
 
 **Acceptance:** hand-written true Kepler → `test_error ≈ machine-eps`, `fitted_params ≈ (c0,1.5)`;
 a 100-line if/else overfit → worse `score` despite low `train_error`; an infinite-loop/raising
@@ -303,6 +304,15 @@ Producer–consumer evolutionary loop + program DB with islands; exemplar sampli
 score with retained exploration; island reset on stagnation. Logic core owns policy knobs; infra
 owns DB + async transport. **Acceptance:** Tier 0 converges end-to-end; Kepler converges in both
 conditions within budget.
+
+> **v1 reality (impl):** v1 uses a **SINGLE program-pool — no islands**. Islands are a fallback
+> reserved for if the `anon` condition fails to converge; an `ISLANDS SEAM` comment in `ProgramDB`
+> marks where they slot in. Diversity in v1 comes from a **temperature schedule** (~0.8 early →
+> ~0.4 late, a deterministic function of budget fraction consumed) plus **rank-weighted exemplar
+> sampling** (favor high score, retain tail), in place of island diversity. Budget is a single
+> GLOBAL cumulative counter (total programs evaluated) — the ablation x-axis. Entry point:
+> `run_search(dataset, budget, seed, batch_size=25) -> RunLog`. Tier 0 validated live: converged
+> to `params[0]*x**2 + params[1]` (best_test_error ≈ 8e-32) in round 1.
 
 ### Module 6 — `ablation_experiment.py` (THE product — logic core / DS)
 ```python
