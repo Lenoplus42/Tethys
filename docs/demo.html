@@ -139,22 +139,24 @@ ul.clean{margin:.4em 0;padding-left:1.2em} ul.clean li{margin:.4em 0;color:#d2d2
   <!-- 2 · THE GAP -->
   <section class="slide" data-chart="gap">
     <div class="slabel"><span class="chip"><span class="id">02</span> THE GAP <span class="sector"></span></span></div>
-    <h2 class="head step">A prior is worthless on a simple law —<br/>and worth <span style="color:var(--teal)">~20× compute</span> on a complex one.</h2>
-    <div class="cols">
+    <h2 class="head step">A prior is worthless on a simple law —<br/>and worth <span style="color:var(--teal)">10–20× compute</span> as structure grows.</h2>
+    <div class="cols" style="grid-template-columns:repeat(3,1fr);gap:24px">
       <div class="step">
-        <div class="caprow"><span class="cap">Kepler · 1 input · control</span>
-          <span class="glegend"><i class="t"></i><b>priors</b><i class="a"></i><b>anon</b></span></div>
+        <div class="caprow"><span class="cap">Kepler · 1 input · power law · control</span></div>
         <div id="gapKepler" class="plotwrap" style="height:30vh"></div>
       </div>
       <div class="step">
-        <div class="caprow"><span class="cap">Newton · 3 inputs · interaction structure</span>
-          <span class="glegend"><i class="t"></i><b>priors</b><i class="a"></i><b>anon</b></span></div>
+        <div class="caprow"><span class="cap">Rocket · transcendental (log) · tight</span></div>
+        <div id="gapRocket" class="plotwrap" style="height:30vh"></div>
+      </div>
+      <div class="step">
+        <div class="caprow"><span class="cap">Newton · 3 inputs · interaction · largest</span></div>
         <div id="gapNewton" class="plotwrap" style="height:30vh"></div>
       </div>
     </div>
     <div class="step" style="font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:8px;letter-spacing:.02em;max-width:1080px">
-      Crossings = geomean over the 3 seeds (B<sub>priors</sub>&nbsp;5.3, B<sub>anon</sub>&nbsp;107 → 20.1×, the headline).
-      Curves are smoothed trends anchored to those crossings · per-seed PRIOR_PRICE 1.7–100×.</div>
+      Crossings = geomean over 3 seeds, first E* crossing. Curves are smoothed trends anchored to those crossings.
+      Per-seed PRIOR_PRICE: Kepler ~1×, Rocket 8.7–14.5× (std 2.5, tight), Newton 1.7–100× (std 40, heavy-tailed).</div>
     <div class="oneline step" style="margin-top:6px"><span class="mut">The horizontal gap on the </span>E*<span class="mut">
       line is</span> PRIOR_PRICE<span class="mut"> — the compute the prior buys you. Same engine, same data; only the
       variable names change.</span></div>
@@ -177,34 +179,35 @@ ul.clean{margin:.4em 0;padding-left:1.2em} ul.clean li{margin:.4em 0;color:#d2d2
   <!-- 4 · THE REVEAL -->
   <section class="slide">
     <div class="slabel"><span class="chip"><span class="id">04</span> THE REVEAL <span class="sector"></span></span></div>
-    <h2 class="head step">Strip every name. From numbers alone, the engine writes Newton's law.</h2>
+    <h2 class="head step">Strip every name. From numbers alone, the engine writes the rocket equation.</h2>
     <div class="compare">
       <div class="card truth step">
-        <div class="h">Ground truth · Newton, 1687</div>
-        <div style="font-size:clamp(20px,2.4vw,30px);color:var(--ink)">$$F = G\,\dfrac{m_1 m_2}{r^{2}}$$</div>
-        <div class="eqcap" style="margin-top:6px">a constant, a product of masses, an inverse-square distance.</div>
+        <div class="h">Ground truth · Tsiolkovsky, 1903</div>
+        <div style="font-size:clamp(20px,2.4vw,30px);color:var(--ink)">$$\Delta v = v_e \,\ln\!\dfrac{m_0}{m_1}$$</div>
+        <div class="eqcap" style="margin-top:6px">an exhaust velocity, times the log of the mass ratio.</div>
       </div>
       <div class="card disc step">
-        <div class="h">Discovered · priors · seed 2 · blind to the word "gravity"</div>
+        <div class="h">Discovered · priors · seed 1 · blind to the word "rocket"</div>
         <div class="codecard">
+<span class="num">N_PARAMS</span> = <span class="num">1</span><br/>
 <span class="kw">def</span> <span class="fn">evaluate_law</span>(inputs, params):<br/>
-&nbsp;&nbsp;m1, m2, r = inputs<br/>
-&nbsp;&nbsp;<span class="kw">return</span> params[<span class="num">0</span>]*(m1*m2)/(r**params[<span class="num">1</span>]) + params[<span class="num">2</span>]
+&nbsp;&nbsp;exhaust_velocity = inputs[<span class="num">0</span>]<br/>
+&nbsp;&nbsp;mass_ratio = inputs[<span class="num">1</span>]<br/>
+&nbsp;&nbsp;<span class="kw">return</span> params[<span class="num">0</span>] * exhaust_velocity * <span class="fn">log</span>(mass_ratio)
         </div>
       </div>
     </div>
     <table class="maptbl step">
-      <tr><td class="p">params[0] = 1.000</td><td class="arrow">→</td><td class="m">G</td><td style="color:var(--muted)">gravitational constant (normalized to 1)</td></tr>
-      <tr><td class="p">params[1] = 2.000</td><td class="arrow">→</td><td class="m">r²</td><td style="color:var(--muted)">the inverse-square exponent — recovered exactly</td></tr>
-      <tr><td class="p">params[2] = −1.9e-10</td><td class="arrow">→</td><td class="m">≈ 0</td><td style="color:var(--muted)">no constant offset</td></tr>
+      <tr><td class="p">params[0] = 1.000</td><td class="arrow">→</td><td class="m">v_e</td><td style="color:var(--muted)">exhaust-velocity scale (normalized to 1)</td></tr>
+      <tr><td class="p">log(mass_ratio)</td><td class="arrow">→</td><td class="m">ln(m₀/m₁)</td><td style="color:var(--muted)">the logarithmic structure — recovered exactly, not a power</td></tr>
     </table>
     <div class="matchrow step" style="display:flex;align-items:center;gap:18px;margin-top:18px;font-family:var(--mono)">
-      <span style="color:var(--muted)">held-out test error ≈ 1.2 × 10⁻¹⁷</span>
+      <span style="color:var(--muted)">held-out test error = 0.0 &nbsp;(machine zero)</span>
       <span class="badge">matches true law ✓</span>
     </div>
-    <div class="foldnote step">With the names stripped, the blind <b style="color:var(--amber)">anon</b> search instead builds a
-      7-parameter superset — a full quadratic basis over a guarded ratio — whose junk coefficients fit to ≈0; the
-      symbolic reveal folds it back to the same <b>m₁m₂/r²</b>. Same truth, ~20× the compute to reach it.</div>
+    <div class="foldnote step">With the names stripped, the blind <b style="color:var(--amber)">anon</b> search still gets there — it just costs
+      <b>~12×</b> the compute. On one seed it even rediscovered the <b>power-series approximation of the logarithm</b>:
+      <span style="font-family:var(--mono)">v_e·(mass_ratio<sup>ε</sup> − 1) ≈ v_e·ln(mass_ratio)</span> — same truth, the long way around.</div>
   </section>
 
   <!-- 5 · THE ENGINE (animated architecture) -->
@@ -407,6 +410,8 @@ ul.clean{margin:.4em 0;padding-left:1.2em} ul.clean li{margin:.4em 0;color:#d2d2
 <script>
 const DATA = {"kepler":{"traces":{"priors":[[[8,3.325e-32],[13,0.0],[33,0.0]],[[6,9.989e-32],[13,0.0],[27,0.0]],[[6,0.0],[21,0.0]]],"anon":[[[8,0.0],[23,0.0]],[[1,0.01283],[6,0.0001106],[11,5.172e-05],[24,5.172e-05],[34,3.783e-06],[78,4.445e-18],[83,6.47e-19],[92,6.47e-19]],[[6,0.0],[17,0.0]]]},"pp":{"geomean":1.047804868871497,"min":1.0,"max":1.1503797718071305},"seed":{"0":{"B_priors":8.0,"B_anon":8.0,"price":1.0},"1":{"B_priors":6.0,"B_anon":6.902278630842783,"price":1.1503797718071305},"2":{"B_priors":6.0,"B_anon":6.0,"price":1.0}}},"newton":{"traces":{"priors":[[[6,0.0],[29,0.0]],[[5,0.0],[20,0.0]],[[5,0.0],[27,0.0]]],"anon":[[[10,6.456e-18],[14,4.989e-18],[19,3.533e-19],[24,3.533e-19]],[[8,0.2715],[44,0.2396],[62,0.1315],[71,0.0316],[76,0.03072],[155,0.0303],[244,8.758e-18],[255,8.758e-18]],[[1,0.556],[6,0.3575],[11,0.3232],[16,0.2869],[58,0.2698],[76,0.2698],[85,0.2698],[95,0.2498],[133,0.1042],[183,0.0653],[252,0.03629],[267,0.03515],[298,0.02646],[394,0.02585],[409,0.02048],[424,0.007701],[502,1.208e-17],[510,1.208e-17]]]},"pp":{"geomean":20.136046479152423,"min":1.6666666666666667,"max":100.3870146312588},"seed":{"0":{"B_priors":6.0,"B_anon":10.0,"price":1.6666666666666667},"1":{"B_priors":5.0,"B_anon":243.98679973732263,"price":48.79735994746453},"2":{"B_priors":5.0,"B_anon":501.935073156294,"price":100.3870146312588}}}};
 
+DATA.rocket = {"pp":{"geomean":11.872,"min":8.662,"max":14.495},"seed":{"0":{"B_priors":8.0,"B_anon":115.96278580961118,"price":14.495},"1":{"B_priors":8.996839517392331,"B_anon":119.90801012786724,"price":13.328},"2":{"B_priors":5.995863083546538,"B_anon":51.937029078164926,"price":8.662}}};
+
 const ETARGET=1e-4, FLOOR=1e-10;
 const clamp=e=>Math.max(e,FLOOR);
 const C={bg:'#0d0e12',grid:'#1d1e26',txt:'#8a8a99',teal:'#2dd4bf',amber:'#f5b932',accent:'#a78bfa',red:'#ef4444'};
@@ -440,9 +445,14 @@ function drawGap(div,law){
     {x:[bp,ba],y:[Estar*3.2,Estar*3.2],mode:'lines',line:{color:big?C.accent:C.txt,width:2},hoverinfo:'skip'},
     {x:[Math.sqrt(bp*ba)],y:[Estar*11],mode:'text',text:['◀ '+price.toFixed(price<2?2:1)+'× compute ▶'],
       textfont:{color:big?C.accent:C.txt,size:big?16:12},hoverinfo:'skip'},
-    {x:[bp],y:[Estar/14],mode:'text',text:['priors '+bp.toFixed(1)],textfont:{color:C.teal,size:11},hoverinfo:'skip'},
-    {x:[ba],y:[Estar/14],mode:'text',text:['anon '+(ba<20?ba.toFixed(1):Math.round(ba))],textfont:{color:C.amber,size:11},hoverinfo:'skip'}
   ];
+  // crossing labels — merge into one when priors≈anon (Kepler) to avoid overlap
+  if(ba/bp < 1.4){
+    t.push({x:[Math.sqrt(bp*ba)],y:[Estar/14],mode:'text',text:['priors ≈ anon ≈ '+ba.toFixed(1)],textfont:{color:C.txt,size:11},hoverinfo:'skip'});
+  }else{
+    t.push({x:[bp],y:[Estar/14],mode:'text',text:['priors '+bp.toFixed(1)],textfont:{color:C.teal,size:11},hoverinfo:'skip'});
+    t.push({x:[ba],y:[Estar/14],mode:'text',text:['anon '+(ba<20?ba.toFixed(1):Math.round(ba))],textfont:{color:C.amber,size:11},hoverinfo:'skip'});
+  }
   Plotly.react(div,t,lay('PROGRAMS EVALUATED  (COMPUTE →)','TEST ERROR (NMSE)',
     {x:{range:[0,3]},y:{range:[Math.log10(Einf),Math.log10(0.95)]}}),CFG);
 }
@@ -490,10 +500,10 @@ let si=0, pi=0;
 const stepsOf=s=>[...s.querySelectorAll('.step')];
 function renderChart(i){
   const ch=slides[i].dataset.chart; if(!ch) return;
-  if(rendered[ch]){ setTimeout(()=>{ if(ch==='gap'){Plotly.Plots.resize('gapKepler');Plotly.Plots.resize('gapNewton');}
+  if(rendered[ch]){ setTimeout(()=>{ if(ch==='gap'){Plotly.Plots.resize('gapKepler');Plotly.Plots.resize('gapRocket');Plotly.Plots.resize('gapNewton');}
     if(ch==='spread')Plotly.Plots.resize('spread'); if(ch==='asym')Plotly.Plots.resize('asym'); },60); return; }
   rendered[ch]=true;
-  if(ch==='gap'){ drawGap('gapKepler','kepler'); drawGap('gapNewton','newton'); }
+  if(ch==='gap'){ drawGap('gapKepler','kepler'); drawGap('gapRocket','rocket'); drawGap('gapNewton','newton'); }
   if(ch==='spread'){ drawSpread(); }
   if(ch==='asym'){ drawAsym(); }
 }
@@ -531,7 +541,7 @@ document.addEventListener('keydown',e=>{
   else if(e.key==='ArrowLeft'||e.key==='Backspace'||e.key==='PageUp'){ e.preventDefault(); prev(); }
 });
 document.getElementById('deck').addEventListener('click',e=>{ if(e.target.closest('input,button,a')) return; next(); });
-window.addEventListener('resize',()=>{ ['gapKepler','gapNewton','spread','asym'].forEach(d=>{ try{Plotly.Plots.resize(d);}catch(_){} }); });
+window.addEventListener('resize',()=>{ ['gapKepler','gapRocket','gapNewton','spread','asym'].forEach(d=>{ try{Plotly.Plots.resize(d);}catch(_){} }); });
 show(0,true);
 </script>
 </body>
