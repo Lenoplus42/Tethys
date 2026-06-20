@@ -24,9 +24,9 @@ import sympy as sp
 from core.contracts import RunLog
 from core.datasets import make_dataset
 from core.evaluator import fit_params
-from core.laws import KEPLER, NEWTON, TIER0
+from core.laws import KEPLER, NEWTON, ROCKET, TIER0
 
-_LAW_REGISTRY = {law.name: law for law in (TIER0, KEPLER, NEWTON)}
+_LAW_REGISTRY = {law.name: law for law in (TIER0, KEPLER, NEWTON, ROCKET)}
 
 ZERO_TOL = 1e-5       # |fitted coefficient| below this -> treated as 0
 ADDITIVE_TOL = 1e-6   # additive literal constant below this (divide-guard) -> dropped

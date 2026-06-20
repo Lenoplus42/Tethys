@@ -7,6 +7,8 @@ while keeping the numeric data identical. true_law_fn takes a tuple of inputs
 scalar. It is NEVER shown to the LLM.
 """
 
+import math
+
 from core.contracts import LawSpec
 
 # Newton constant, chosen as 1.0 to keep outputs O(1)-O(100) for curve_fit stability
@@ -58,5 +60,25 @@ NEWTON = LawSpec(
     semantic_output="gravitational_force",
     domain_hint="These describe the gravitational attraction between two masses.",
     anon_inputs=["Sensor_A", "Sensor_B", "Sensor_C"],
+    anon_output="Sensor_Y",
+)
+
+
+# ---- Law 3 — ROCKET / Tsiolkovsky: delta_v = v_e * ln(mass_ratio), n_params=1 ----
+# 2-input [v_e, mass_ratio]: with datasets.py's [1,10] sampling, mass_ratio >= 1 so
+# the log domain is valid and delta_v >= 0; the canonical form is linear in c0, so
+# curve_fit is trivially stable (1 param). This is the first law needing a
+# transcendental (log) — a power law cannot fit it, so anon must actually search.
+ROCKET = LawSpec(
+    name="rocket",
+    n_inputs=2,
+    true_law_fn=lambda inputs: inputs[0] * math.log(inputs[1]),
+    true_law_str="delta_v = v_e * ln(mass_ratio)  (Tsiolkovsky)",
+    target_form_hint="c0 * v_e * log(mass_ratio)",
+    n_params=1,
+    semantic_inputs=["exhaust_velocity", "mass_ratio"],
+    semantic_output="delta_v",
+    domain_hint="These describe a rocket's velocity change as it burns fuel.",
+    anon_inputs=["Sensor_A", "Sensor_B"],
     anon_output="Sensor_Y",
 )

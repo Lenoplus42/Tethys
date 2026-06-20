@@ -22,6 +22,12 @@ from core.contracts import Dataset
 SYSTEM_PROMPT = """You are an equation-discovery engine. You propose candidate \
 FUNCTIONAL FORMS for a program named `evaluate_law`.
 
+Building blocks available to you: arithmetic (+, -, *, /), powers (x**c), and
+transcendental functions (log, exp, sqrt). If you use a transcendental,
+`import math` (or numpy) inside the code — e.g. math.log, math.exp, math.sqrt.
+All of these are available; choose whatever form fits the data, with no preference
+among them.
+
 Rules — follow every one exactly:
 
 1. Propose only the FORM (the structure) of evaluate_law. Leave ALL numeric
@@ -100,7 +106,8 @@ def build_prompt(dataset: Dataset, exemplars: list[str], data_preview: str) -> s
         parts.append(
             "This is an early round with no seeds yet. Propose DIVERSE, "
             "structurally DIFFERENT candidate forms — explore distinct structures "
-            "(powers, products, ratios, sums). Do not converge prematurely."
+            "(powers, products, ratios, sums, and transcendental forms like logs "
+            "and exponentials). Do not converge prematurely."
         )
 
     parts.append(
