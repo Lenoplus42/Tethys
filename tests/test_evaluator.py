@@ -57,17 +57,10 @@ def test_overfit_loses_to_true_kepler():
     assert description_length(overfit_code) > description_length(TRUE_KEPLER)
 
 
-def test_infinite_loop_does_not_hang_or_raise():
-    ds = make_dataset(KEPLER, "anon", 0)
-    looping = (
-        "N_PARAMS = 1\n"
-        "def evaluate_law(inputs, params):\n"
-        "    while True:\n"
-        "        pass\n"
-        "    return params[0]\n"
-    )
-    res = score_program(looping, ds)        # must return, not hang
-    assert res.valid is False
+# Runaway-candidate protection moved to the sandbox layer (the single source of
+# truth for timeouts): see tests/test_sandbox.py::test_infinite_loop_times_out_no_hang_no_raise.
+# evaluator is now pure scoring logic with no wall-clock net, so an infinite-loop
+# candidate must NOT be run through score_program directly here (it would hang).
 
 
 def test_raising_program_is_invalid():

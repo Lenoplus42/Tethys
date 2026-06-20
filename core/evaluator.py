@@ -23,8 +23,6 @@ Scoring decisions (§4 Module 2):
 """
 
 import ast
-import signal
-from contextlib import contextmanager
 
 import numpy as np
 from scipy.optimize import curve_fit
@@ -40,31 +38,8 @@ EPS = 1e-6
 # Variance floor so NMSE is finite for (near-)constant-output splits.
 _VAR_EPS = 1e-12
 
-# Wall-clock guard so a pathological candidate (e.g. `while True`) cannot hang a
-# pure call. The REAL hard timeout is the sandbox's job (§4 Module 4); this is a
-# lightweight single-thread SIGALRM safety net so score_program never hangs.
-_TIME_LIMIT_S = 2.0
-
 # Score encoding constants (see combine_score docstring).
 _SUBEPS_OFFSET = 1e6
-
-
-class _Timeout(Exception):
-    pass
-
-
-@contextmanager
-def _time_limit(seconds: float):
-    def _handler(signum, frame):
-        raise _Timeout()
-
-    old = signal.signal(signal.SIGALRM, _handler)
-    signal.setitimer(signal.ITIMER_REAL, seconds)
-    try:
-        yield
-    finally:
-        signal.setitimer(signal.ITIMER_REAL, 0)
-        signal.signal(signal.SIGALRM, old)
 
 
 def _exec_program(code: str) -> dict:
@@ -176,33 +151,33 @@ def combine_score(test_error: float, length: int) -> float:
 
 
 def score_program(code: str, dataset: Dataset) -> ScoreResult:
-    """The seam fn the sandbox wraps. Catches everything; never raises/hangs."""
+    """The seam fn the sandbox wraps. Catches everything; never raises. Runaway/timeout
+    protection is the sandbox's job — do not call score_program on untrusted code without sandbox."""
     try:
-        with _time_limit(_TIME_LIMIT_S):
-            ns = _exec_program(code)
-            length = description_length(code)
-            params = fit_params(ns, dataset)
-            if params is None:
-                return ScoreResult(
-                    valid=False,
-                    train_error=float("inf"),
-                    test_error=float("inf"),
-                    length=length,
-                    fitted_params=(),
-                    score=float("-inf"),
-                    note="fit failed",
-                )
-            train_error, test_error = evaluate_fit(ns, params, dataset)
-            score = combine_score(test_error, length)
+        ns = _exec_program(code)
+        length = description_length(code)
+        params = fit_params(ns, dataset)
+        if params is None:
             return ScoreResult(
-                valid=True,
-                train_error=train_error,
-                test_error=test_error,
+                valid=False,
+                train_error=float("inf"),
+                test_error=float("inf"),
                 length=length,
-                fitted_params=params,
-                score=score,
-                note="ok",
+                fitted_params=(),
+                score=float("-inf"),
+                note="fit failed",
             )
+        train_error, test_error = evaluate_fit(ns, params, dataset)
+        score = combine_score(test_error, length)
+        return ScoreResult(
+            valid=True,
+            train_error=train_error,
+            test_error=test_error,
+            length=length,
+            fitted_params=params,
+            score=score,
+            note="ok",
+        )
     except Exception as e:  # noqa: BLE001 — by contract, failures become valid=False
         return ScoreResult(
             valid=False,
