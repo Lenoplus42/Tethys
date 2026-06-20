@@ -435,21 +435,24 @@ function drawGap(div,law){
   const Bs=[]; for(let i=0;i<=90;i++) Bs.push(Math.pow(10, 3*i/90));   // 1 .. 1000
   const em=(B,t)=> Einf+(E0-Einf)*Math.exp(-B/t);
   const big = law==='newton';
+  const degen = ba/bp < 1.4;   // CONTROL: priors≈anon — no visible gap to annotate
   const t=[
     {x:Bs,y:Bs.map(B=>em(B,ta)),mode:'lines',line:{color:C.amber,width:3},hoverinfo:'skip'},
-    {x:Bs,y:Bs.map(B=>em(B,tp)),mode:'lines',line:{color:C.teal,width:3},
-      fill:'tonexty',fillcolor:'rgba(167,139,250,0.17)',hoverinfo:'skip'},
+    // priors curve: dotted when coincident so BOTH curves read as overlapping (= no gap)
+    {x:Bs,y:Bs.map(B=>em(B,tp)),mode:'lines',line:{color:C.teal,width:degen?2.5:3,dash:degen?'dot':'solid'},
+      fill:degen?'none':'tonexty',fillcolor:'rgba(167,139,250,0.17)',hoverinfo:'skip'},
     {x:[1,1000],y:[Estar,Estar],mode:'lines',line:{color:C.accent,width:1.4,dash:'dot'},hoverinfo:'skip'},
     {x:[bp],y:[Estar],mode:'markers',marker:{color:C.teal,size:11,line:{color:'#04110f',width:2}},hoverinfo:'skip'},
     {x:[ba],y:[Estar],mode:'markers',marker:{color:C.amber,size:11,line:{color:'#181203',width:2}},hoverinfo:'skip'},
-    {x:[bp,ba],y:[Estar*3.2,Estar*3.2],mode:'lines',line:{color:big?C.accent:C.txt,width:2},hoverinfo:'skip'},
-    {x:[Math.sqrt(bp*ba)],y:[Estar*11],mode:'text',text:['◀ '+price.toFixed(price<2?2:1)+'× compute ▶'],
-      textfont:{color:big?C.accent:C.txt,size:big?16:12},hoverinfo:'skip'},
   ];
-  // crossing labels — merge into one when priors≈anon (Kepler) to avoid overlap
-  if(ba/bp < 1.4){
+  if(degen){
+    // no-gap control: clean label, no arrow/bar (the coincident curves ARE the point)
+    t.push({x:[Math.sqrt(bp*ba)],y:[Estar*60],mode:'text',text:['≈ '+price.toFixed(2)+'× · no gap'],textfont:{color:C.txt,size:13},hoverinfo:'skip'});
     t.push({x:[Math.sqrt(bp*ba)],y:[Estar/14],mode:'text',text:['priors ≈ anon ≈ '+ba.toFixed(1)],textfont:{color:C.txt,size:11},hoverinfo:'skip'});
   }else{
+    t.push({x:[bp,ba],y:[Estar*3.2,Estar*3.2],mode:'lines',line:{color:big?C.accent:C.txt,width:2},hoverinfo:'skip'});
+    t.push({x:[Math.sqrt(bp*ba)],y:[Estar*11],mode:'text',text:['◀ '+price.toFixed(price<2?2:1)+'× compute ▶'],
+      textfont:{color:big?C.accent:C.txt,size:big?16:12},hoverinfo:'skip'});
     t.push({x:[bp],y:[Estar/14],mode:'text',text:['priors '+bp.toFixed(1)],textfont:{color:C.teal,size:11},hoverinfo:'skip'});
     t.push({x:[ba],y:[Estar/14],mode:'text',text:['anon '+(ba<20?ba.toFixed(1):Math.round(ba))],textfont:{color:C.amber,size:11},hoverinfo:'skip'});
   }
