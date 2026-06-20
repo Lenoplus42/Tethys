@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.env
+.venv/
+venv/
+.pytest_cache/
+# run artifacts — keep code clean, data stays local
+*.png
+runlogs/
+*.json
+.DS_Store
